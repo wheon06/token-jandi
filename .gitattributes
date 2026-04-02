@@ -1,2 +1,3 @@
 scripts/* linguist-vendored
 Casks/* linguist-vendored
+*.strings linguist-vendored
