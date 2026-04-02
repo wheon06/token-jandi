@@ -15,7 +15,7 @@ class UpdateChecker: ObservableObject {
     static let shared = UpdateChecker()
 
     static let currentVersion = "0.4.0"
-    static let repoOwner = "wheon"
+    static let repoOwner = "wheon06"
     static let repoName = "token-jandi"
 
     @Published var state: UpdateState = .idle

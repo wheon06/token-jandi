@@ -6,26 +6,27 @@ BUNDLE_ID="com.heeyeonlee.token-jandi"
 VERSION="0.4.0"
 BUILD_DIR=".build/release"
 APP_DIR="dist/${APP_NAME}.app"
+SIGN_IDENTITY="Developer ID Application: HEEYEON LEE (8ZJ7CHXMW2)"
+TEAM_ID="8ZJ7CHXMW2"
 
-echo "Building ${APP_NAME} v${VERSION}..."
+echo "=== Building ${APP_NAME} v${VERSION} ==="
 
-# Build release
+# 1. Build release
+echo "→ Compiling..."
 swift build -c release
 
-# Create .app bundle structure
+# 2. Create .app bundle
 rm -rf "dist"
 mkdir -p "${APP_DIR}/Contents/MacOS"
 mkdir -p "${APP_DIR}/Contents/Resources"
 
-# Copy binary
 cp "${BUILD_DIR}/TokenJandi" "${APP_DIR}/Contents/MacOS/TokenJandi"
 
-# Copy resources
 if [ -d "${BUILD_DIR}/TokenJandi_TokenJandi.bundle" ]; then
     cp -R "${BUILD_DIR}/TokenJandi_TokenJandi.bundle" "${APP_DIR}/Contents/Resources/"
 fi
 
-# Create Info.plist
+# 3. Info.plist
 cat > "${APP_DIR}/Contents/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -62,25 +63,54 @@ cat > "${APP_DIR}/Contents/Info.plist" << PLIST
 </plist>
 PLIST
 
-echo "✅ Built: ${APP_DIR}"
-echo "   Version: ${VERSION}"
-echo "   Bundle ID: ${BUNDLE_ID}"
+# 4. Entitlements
+cat > "/tmp/token-jandi.entitlements" << ENTITLEMENTS
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
+</plist>
+ENTITLEMENTS
 
-# Create DMG (optional)
-if command -v create-dmg &> /dev/null; then
-    echo "Creating DMG..."
-    create-dmg \
-        --volname "${APP_NAME}" \
-        --window-size 400 300 \
-        --icon "${APP_NAME}.app" 100 150 \
-        --app-drop-link 300 150 \
-        "dist/${APP_NAME}-${VERSION}.dmg" \
-        "dist/"
-    echo "✅ DMG: dist/${APP_NAME}-${VERSION}.dmg"
-else
-    # Fallback: zip
-    cd dist
-    zip -r "${APP_NAME}-${VERSION}.zip" "${APP_NAME}.app"
-    cd ..
-    echo "✅ ZIP: dist/${APP_NAME}-${VERSION}.zip"
-fi
+# 5. Code sign
+echo "→ Signing..."
+codesign --force --deep --options runtime \
+    --sign "${SIGN_IDENTITY}" \
+    --entitlements "/tmp/token-jandi.entitlements" \
+    "${APP_DIR}"
+
+echo "→ Verifying signature..."
+codesign --verify --deep --strict "${APP_DIR}"
+echo "✅ Signature verified"
+
+# 6. Create ZIP for notarization
+echo "→ Creating ZIP..."
+cd dist
+zip -r "${APP_NAME}-${VERSION}.zip" "${APP_NAME}.app"
+cd ..
+
+# 7. Notarize
+echo "→ Notarizing (this may take a few minutes)..."
+xcrun notarytool submit "dist/${APP_NAME}-${VERSION}.zip" \
+    --keychain-profile "AC_PASSWORD" \
+    --wait
+
+# 8. Staple
+echo "→ Stapling..."
+xcrun stapler staple "${APP_DIR}"
+
+# 9. Re-create ZIP with stapled app
+rm "dist/${APP_NAME}-${VERSION}.zip"
+cd dist
+zip -r "${APP_NAME}-${VERSION}.zip" "${APP_NAME}.app"
+cd ..
+
+echo ""
+echo "=== Done ==="
+echo "✅ ${APP_DIR} (signed + notarized)"
+echo "✅ dist/${APP_NAME}-${VERSION}.zip"
