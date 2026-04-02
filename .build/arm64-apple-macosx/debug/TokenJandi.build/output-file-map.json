@@ -1,0 +1,75 @@
+{
+  "": {
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/master.swiftdeps"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/TokenJandi/App/TokenJandiApp.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenJandiApp.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenJandiApp.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenJandiApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenJandiApp.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenJandiApp.dia"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/TokenJandi/Models/ClaudeLogParser.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/ClaudeLogParser.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/ClaudeLogParser.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/ClaudeLogParser~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/ClaudeLogParser.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/ClaudeLogParser.dia"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/TokenJandi/Models/HeatmapViewModel.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/HeatmapViewModel.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/HeatmapViewModel.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/HeatmapViewModel~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/HeatmapViewModel.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/HeatmapViewModel.dia"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/TokenJandi/Models/LocalizationManager.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/LocalizationManager.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/LocalizationManager.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/LocalizationManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/LocalizationManager.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/LocalizationManager.dia"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/TokenJandi/Models/TokenUsage.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenUsage.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenUsage.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenUsage~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenUsage.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/TokenUsage.dia"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/TokenJandi/Models/UpdateChecker.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/UpdateChecker.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/UpdateChecker.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/UpdateChecker~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/UpdateChecker.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/UpdateChecker.dia"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/TokenJandi/Views/GrassHeatmapView.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/GrassHeatmapView.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/GrassHeatmapView.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/GrassHeatmapView~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/GrassHeatmapView.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/GrassHeatmapView.dia"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/TokenJandi/Views/MenuBarPopoverView.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/MenuBarPopoverView.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/MenuBarPopoverView.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/MenuBarPopoverView~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/MenuBarPopoverView.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/MenuBarPopoverView.dia"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/TokenJandi/Views/SettingsView.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/SettingsView.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/SettingsView.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/SettingsView~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/SettingsView.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/SettingsView.dia"
+  },
+  "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/DerivedSources/resource_bundle_accessor.swift": {
+    "dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/resource_bundle_accessor.d",
+    "object": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/resource_bundle_accessor.swift.o",
+    "swiftmodule": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/resource_bundle_accessor~partial.swiftmodule",
+    "swift-dependencies": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/resource_bundle_accessor.swiftdeps",
+    "diagnostics": "/Users/wheon/Development/WHEON/token-jandi/.build/arm64-apple-macosx/debug/TokenJandi.build/resource_bundle_accessor.dia"
+  }
+}
