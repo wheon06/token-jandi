@@ -124,7 +124,7 @@ func formatNumber(_ n: Int) -> String {
     return formatter.string(from: NSNumber(value: n)) ?? "\(n)"
 }
 
-/// Localization helper — uses LocalizationManager singleton
+/// Localization helper
 func L(_ key: String) -> String {
     LocalizationManager.shared.localized(key)
 }

@@ -21,36 +21,108 @@ class LocalizationManager: ObservableObject {
     static let shared = LocalizationManager()
 
     @AppStorage("appLanguage") var selectedLanguage: AppLanguage = .system {
-        didSet { updateBundle() }
+        didSet { objectWillChange.send() }
     }
 
-    @Published var bundle: Bundle = Bundle.module
-
-    private init() {
-        updateBundle()
-    }
-
-    private func updateBundle() {
-        let langCode: String
+    private var resolvedLanguage: String {
         switch selectedLanguage {
         case .system:
-            langCode = Locale.preferredLanguages.first?.components(separatedBy: "-").first ?? "en"
+            let preferred = Locale.preferredLanguages.first ?? "en"
+            return preferred.hasPrefix("ko") ? "ko" : "en"
         case .en, .ko:
-            langCode = selectedLanguage.rawValue
+            return selectedLanguage.rawValue
         }
-
-        if let path = Bundle.module.path(forResource: langCode, ofType: "lproj"),
-           let langBundle = Bundle(path: path) {
-            bundle = langBundle
-        } else if let path = Bundle.module.path(forResource: "en", ofType: "lproj"),
-                  let fallback = Bundle(path: path) {
-            bundle = fallback
-        }
-
-        objectWillChange.send()
     }
 
     func localized(_ key: String) -> String {
-        NSLocalizedString(key, bundle: bundle, comment: "")
+        let lang = resolvedLanguage
+        return Self.strings[lang]?[key] ?? Self.strings["en"]?[key] ?? key
     }
+
+    // MARK: - All strings embedded
+
+    private static let strings: [String: [String: String]] = [
+        "en": [
+            "app.title": "Token Jandi",
+            "stats.today": "Today",
+            "stats.thisWeek": "This Week",
+            "stats.streak": "Streak",
+            "stats.total": "Total",
+            "stats.messages": "messages",
+            "stats.tokens": "tokens",
+            "stats.days": "days",
+            "heatmap.less": "Less",
+            "heatmap.more": "More",
+            "heatmap.noUsage": "No usage",
+            "detail.messages": "messages",
+            "detail.tokens": "tokens",
+            "detail.tools": "tools",
+            "detail.selectDay": "Hover a cell to see details",
+            "day.mon": "Mon",
+            "day.wed": "Wed",
+            "day.fri": "Fri",
+            "chart.daily": "Daily",
+            "chart.monthly": "Monthly",
+            "action.refresh": "Refresh data",
+            "action.quit": "Quit",
+            "settings.menuBarUsage": "Show today's usage in menu bar",
+            "settings.language": "Language",
+            "settings.version": "Version",
+            "settings.author": "Author",
+            "settings.source": "Data source",
+            "settings.update": "Update",
+            "settings.checkUpdate": "Check for updates",
+            "settings.updateAvailable": "available",
+            "update.checking": "Checking...",
+            "update.upToDate": "Up to date",
+            "update.checkFailed": "Check failed",
+            "update.noAsset": "No download found",
+            "update.downloadFailed": "Download failed",
+            "update.unzipFailed": "Extract failed",
+            "update.noApp": "App not found",
+            "update.installFailed": "Install failed",
+            "update.installing": "Installing...",
+        ],
+        "ko": [
+            "app.title": "토큰 잔디",
+            "stats.today": "오늘",
+            "stats.thisWeek": "이번 주",
+            "stats.streak": "연속",
+            "stats.total": "전체",
+            "stats.messages": "메시지",
+            "stats.tokens": "토큰",
+            "stats.days": "일",
+            "heatmap.less": "적음",
+            "heatmap.more": "많음",
+            "heatmap.noUsage": "사용 없음",
+            "detail.messages": "메시지",
+            "detail.tokens": "토큰",
+            "detail.tools": "도구",
+            "detail.selectDay": "셀에 마우스를 올려 상세 보기",
+            "day.mon": "월",
+            "day.wed": "수",
+            "day.fri": "금",
+            "chart.daily": "일별",
+            "chart.monthly": "월별",
+            "action.refresh": "데이터 새로고침",
+            "action.quit": "종료",
+            "settings.menuBarUsage": "메뉴바에 오늘 사용량 표시",
+            "settings.language": "언어",
+            "settings.version": "버전",
+            "settings.author": "제작자",
+            "settings.source": "데이터 소스",
+            "settings.update": "업데이트",
+            "settings.checkUpdate": "업데이트 확인",
+            "settings.updateAvailable": "업데이트 가능",
+            "update.checking": "확인 중...",
+            "update.upToDate": "최신 버전",
+            "update.checkFailed": "확인 실패",
+            "update.noAsset": "다운로드 파일 없음",
+            "update.downloadFailed": "다운로드 실패",
+            "update.unzipFailed": "압축 해제 실패",
+            "update.noApp": "앱을 찾을 수 없음",
+            "update.installFailed": "설치 실패",
+            "update.installing": "설치 중...",
+        ],
+    ]
 }

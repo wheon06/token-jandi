@@ -22,11 +22,6 @@ mkdir -p "${APP_DIR}/Contents/Resources"
 
 cp "${BUILD_DIR}/TokenJandi" "${APP_DIR}/Contents/MacOS/TokenJandi"
 
-# Resource bundle must be next to the executable for Bundle.module to find it
-if [ -d "${BUILD_DIR}/TokenJandi_TokenJandi.bundle" ]; then
-    cp -R "${BUILD_DIR}/TokenJandi_TokenJandi.bundle" "${APP_DIR}/Contents/MacOS/"
-fi
-
 # 3. Info.plist
 cat > "${APP_DIR}/Contents/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
