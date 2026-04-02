@@ -3,38 +3,66 @@
 <plist version="1.0">
 <dict>
 	<key>files</key>
-	<dict/>
+	<dict>
+		<key>en.lproj/Localizable.strings</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			o/YPWVNDKlMWqDBgU1cmlxJ96eY=
+			</data>
+			<key>optional</key>
+			<true/>
+		</dict>
+		<key>ko.lproj/Localizable.strings</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			G9alDGiF8zYuoPyiBKKTPC/Qe1w=
+			</data>
+			<key>optional</key>
+			<true/>
+		</dict>
+	</dict>
 	<key>files2</key>
 	<dict>
-		<key>MacOS/TokenJandi_TokenJandi.bundle</key>
+		<key>en.lproj/Localizable.strings</key>
 		<dict>
-			<key>cdhash</key>
+			<key>hash2</key>
 			<data>
-			CJpIZdIFay8yQ8xEAaBGiuGxGs4=
+			zcQqxk+hlVzbvZpa5Gw72N++k4qwbLKOh4AKSfuJrRU=
 			</data>
-			<key>requirement</key>
-			<string>identifier "TokenJandi_TokenJandi" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = "8ZJ7CHXMW2"</string>
+			<key>optional</key>
+			<true/>
+		</dict>
+		<key>ko.lproj/Localizable.strings</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			3FnQxiUsMYauMJbShNSvAO/YCTQV38Q9QW8JhPcUmjY=
+			</data>
+			<key>optional</key>
+			<true/>
 		</dict>
 	</dict>
 	<key>rules</key>
 	<dict>
-		<key>^Resources/</key>
+		<key>^.*</key>
 		<true/>
-		<key>^Resources/.*\.lproj/</key>
+		<key>^.*\.lproj/</key>
 		<dict>
 			<key>optional</key>
 			<true/>
 			<key>weight</key>
 			<real>1000</real>
 		</dict>
-		<key>^Resources/.*\.lproj/locversion.plist$</key>
+		<key>^.*\.lproj/locversion.plist$</key>
 		<dict>
 			<key>omit</key>
 			<true/>
 			<key>weight</key>
 			<real>1100</real>
 		</dict>
-		<key>^Resources/Base\.lproj/</key>
+		<key>^Base\.lproj/</key>
 		<dict>
 			<key>weight</key>
 			<real>1010</real>
@@ -56,15 +84,27 @@
 			<key>weight</key>
 			<real>2000</real>
 		</dict>
-		<key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>
-		<dict>
-			<key>nested</key>
-			<true/>
-			<key>weight</key>
-			<real>10</real>
-		</dict>
 		<key>^.*</key>
 		<true/>
+		<key>^.*\.lproj/</key>
+		<dict>
+			<key>optional</key>
+			<true/>
+			<key>weight</key>
+			<real>1000</real>
+		</dict>
+		<key>^.*\.lproj/locversion.plist$</key>
+		<dict>
+			<key>omit</key>
+			<true/>
+			<key>weight</key>
+			<real>1100</real>
+		</dict>
+		<key>^Base\.lproj/</key>
+		<dict>
+			<key>weight</key>
+			<real>1010</real>
+		</dict>
 		<key>^Info\.plist$</key>
 		<dict>
 			<key>omit</key>
@@ -78,37 +118,6 @@
 			<true/>
 			<key>weight</key>
 			<real>20</real>
-		</dict>
-		<key>^Resources/</key>
-		<dict>
-			<key>weight</key>
-			<real>20</real>
-		</dict>
-		<key>^Resources/.*\.lproj/</key>
-		<dict>
-			<key>optional</key>
-			<true/>
-			<key>weight</key>
-			<real>1000</real>
-		</dict>
-		<key>^Resources/.*\.lproj/locversion.plist$</key>
-		<dict>
-			<key>omit</key>
-			<true/>
-			<key>weight</key>
-			<real>1100</real>
-		</dict>
-		<key>^Resources/Base\.lproj/</key>
-		<dict>
-			<key>weight</key>
-			<real>1010</real>
-		</dict>
-		<key>^[^/]+$</key>
-		<dict>
-			<key>nested</key>
-			<true/>
-			<key>weight</key>
-			<real>10</real>
 		</dict>
 		<key>^embedded\.provisionprofile$</key>
 		<dict>
