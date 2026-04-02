@@ -11,6 +11,9 @@
 
 Check your Claude Code token usage easily from the MacOS status bar.
 
+## Preview 👀
+![](./.github/images/preview.png)
+
 ## Requirements
 
 - `Token Jandi` is written in Swift 5.9
