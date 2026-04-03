@@ -1,0 +1,16 @@
+# Build
+.build/
+dist/
+
+# Xcode / SwiftPM
+.swiftpm/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+xcuserdata/
+
+# macOS
+.DS_Store
+*.dSYM/
+
+# Signing
+*.entitlements.bak

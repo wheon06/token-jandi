@@ -1,0 +1,54 @@
+// MARK: - Header
+"app.title" = "토큰 잔디";
+
+// MARK: - Stats
+"stats.today" = "오늘";
+"stats.thisWeek" = "이번 주";
+"stats.streak" = "연속";
+"stats.total" = "전체";
+"stats.messages" = "메시지";
+"stats.tokens" = "토큰";
+"stats.days" = "일";
+
+// MARK: - Heatmap
+"heatmap.less" = "적음";
+"heatmap.more" = "많음";
+"heatmap.noUsage" = "사용 없음";
+
+// MARK: - Detail
+"detail.messages" = "메시지";
+"detail.tokens" = "토큰";
+"detail.tools" = "도구";
+"detail.selectDay" = "셀에 마우스를 올려 상세 보기";
+
+// MARK: - Chart
+"chart.daily" = "일별";
+"chart.monthly" = "월별";
+
+// MARK: - Days
+"day.mon" = "월";
+"day.wed" = "수";
+"day.fri" = "금";
+
+// MARK: - Actions
+"action.refresh" = "데이터 새로고침";
+"action.quit" = "종료";
+
+// MARK: - Settings
+"settings.menuBarUsage" = "메뉴바에 오늘 사용량 표시";
+"settings.language" = "언어";
+"settings.version" = "버전";
+"settings.author" = "제작자";
+"settings.source" = "데이터 소스";
+"settings.update" = "업데이트";
+"settings.checkUpdate" = "업데이트 확인";
+"settings.updateAvailable" = "업데이트 가능";
+"update.checking" = "확인 중...";
+"update.upToDate" = "최신 버전";
+"update.checkFailed" = "확인 실패";
+"update.noAsset" = "다운로드 파일 없음";
+"update.downloadFailed" = "다운로드 실패";
+"update.unzipFailed" = "압축 해제 실패";
+"update.noApp" = "앱을 찾을 수 없음";
+"update.installFailed" = "설치 실패";
+"update.installing" = "설치 중...";
