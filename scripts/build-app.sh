@@ -3,7 +3,7 @@ set -e
 
 APP_NAME="Token Jandi"
 BUNDLE_ID="com.heeyeonlee.token-jandi"
-VERSION="0.4.0"
+VERSION="0.5.0"
 BUILD_DIR=".build/release"
 APP_DIR="dist/${APP_NAME}.app"
 SIGN_IDENTITY="Developer ID Application: HEEYEON LEE (8ZJ7CHXMW2)"

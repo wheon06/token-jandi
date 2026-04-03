@@ -1,5 +1,5 @@
 cask "token-jandi" do
-  version "0.4.0"
+  version "0.5.0"
   sha256 "" # TODO: fill after release build
 
   url "https://github.com/wheon06/token-jandi/releases/download/v#{version}/Token.Jandi-#{version}.zip"

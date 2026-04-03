@@ -14,7 +14,7 @@ enum UpdateState: Equatable {
 class UpdateChecker: ObservableObject {
     static let shared = UpdateChecker()
 
-    static let currentVersion = "0.4.0"
+    static let currentVersion = "0.5.0"
     static let repoOwner = "wheon06"
     static let repoName = "token-jandi"
 
