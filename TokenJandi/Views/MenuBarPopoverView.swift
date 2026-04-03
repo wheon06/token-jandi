@@ -41,13 +41,17 @@ struct MenuBarPopoverView: View {
 
             Divider()
 
-            switch currentTab {
-            case .heatmap:
-                HeatmapContentView(viewModel: viewModel)
-            case .detail:
-                DetailContentView(viewModel: viewModel)
-            case .settings:
-                SettingsView(localization: localization)
+            if !viewModel.hasClaudeData && currentTab != .settings {
+                EmptyStateView()
+            } else {
+                switch currentTab {
+                case .heatmap:
+                    HeatmapContentView(viewModel: viewModel)
+                case .detail:
+                    DetailContentView(viewModel: viewModel)
+                case .settings:
+                    SettingsView(localization: localization)
+                }
             }
         }
         .padding(16)
@@ -242,6 +246,26 @@ struct BarChartView: View {
         guard maxValue > 0 else { return 2 }
         let ratio = CGFloat(value) / CGFloat(maxValue)
         return max(2, ratio * 80)
+    }
+}
+
+// MARK: - Empty State
+
+struct EmptyStateView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "leaf.trianglebadge.exclamationmark")
+                .font(.system(size: 32))
+                .foregroundColor(.secondary)
+            Text(L("empty.title"))
+                .font(.caption)
+                .fontWeight(.medium)
+            Text(L("empty.message"))
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, minHeight: 120)
     }
 }
 

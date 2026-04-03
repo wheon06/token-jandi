@@ -82,6 +82,8 @@ class LocalizationManager: ObservableObject {
             "update.noApp": "App not found",
             "update.installFailed": "Install failed",
             "update.installing": "Installing...",
+            "empty.title": "No Claude Code data found",
+            "empty.message": "Install and use Claude Code to start tracking.\n~/.claude/projects/ not found.",
         ],
         "ko": [
             "app.title": "토큰 잔디",
@@ -123,6 +125,8 @@ class LocalizationManager: ObservableObject {
             "update.noApp": "앱을 찾을 수 없음",
             "update.installFailed": "설치 실패",
             "update.installing": "설치 중...",
+            "empty.title": "Claude Code 사용 정보 없음",
+            "empty.message": "Claude Code를 설치하고 사용하면 추적이 시작됩니다.\n~/.claude/projects/ 경로를 찾을 수 없습니다.",
         ],
     ]
 }

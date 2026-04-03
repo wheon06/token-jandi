@@ -3,6 +3,7 @@ import SwiftUI
 class HeatmapViewModel: ObservableObject {
     @Published var cells: [DayCell] = []
     @Published var selectedCell: DayCell?
+    @Published var hasClaudeData = false
 
     private let calendar = Calendar.current
     private let weeksToShow = 20
@@ -13,8 +14,15 @@ class HeatmapViewModel: ObservableObject {
     }
 
     func loadData() {
+        let claudeDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/projects")
+        hasClaudeData = FileManager.default.fileExists(atPath: claudeDir.path)
+
         let dailyUsage = parser.parseDailyUsage()
         buildCells(from: dailyUsage)
+
+        if hasClaudeData && cells.allSatisfy({ $0.usage == nil }) {
+            hasClaudeData = false
+        }
     }
 
     var todayUsage: TokenUsage? {

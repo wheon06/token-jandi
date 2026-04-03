@@ -22,6 +22,9 @@ mkdir -p "${APP_DIR}/Contents/Resources"
 
 cp "${BUILD_DIR}/TokenJandi" "${APP_DIR}/Contents/MacOS/TokenJandi"
 
+# Copy app icon
+cp "TokenJandi/Resources/AppIcon.icns" "${APP_DIR}/Contents/Resources/AppIcon.icns"
+
 # 3. Info.plist
 cat > "${APP_DIR}/Contents/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -40,6 +43,8 @@ cat > "${APP_DIR}/Contents/Info.plist" << PLIST
     <string>${VERSION}</string>
     <key>CFBundleExecutable</key>
     <string>TokenJandi</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>

@@ -11,7 +11,7 @@ struct TokenJandiApp: App {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "leaf.fill")
-                if showMenuBarUsage {
+                if showMenuBarUsage && viewModel.hasClaudeData {
                     Text(viewModel.todayUsage?.totalTokensFormatted ?? "0")
                         .font(.system(size: 12, weight: .regular, design: .monospaced))
                         .monospacedDigit()
