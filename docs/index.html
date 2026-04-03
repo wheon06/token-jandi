@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="assets/app-icon-small.png">
+  <title>Token Jandi - AI 토큰 사용량을 한눈에</title>
+  <meta name="description" content="GitHub 스타일 잔디 히트맵으로 Claude Code 토큰 사용량을 시각화하는 macOS 메뉴바 앱">
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --green-1: #0e4429;
+      --green-2: #006d32;
+      --green-3: #26a641;
+      --green-4: #39d353;
+      --bg: #0d1117;
+      --bg-card: #161b22;
+      --bg-card-hover: #1c2333;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --border: #30363d;
+      --accent: #39d353;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Nav */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 100;
+      background: rgba(13, 17, 23, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .nav-logo img {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+    }
+
+    .nav-logo span { color: var(--accent); }
+
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      background: var(--accent) !important;
+      color: var(--bg) !important;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600 !important;
+      transition: opacity 0.2s !important;
+    }
+
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* Hero */
+    .hero {
+      padding: 160px 24px 100px;
+      text-align: center;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(57, 211, 83, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero .badge { order: 1; }
+    .hero .hero-icon { order: 2; }
+    .hero h1 { order: 3; }
+    .hero .hero-desc { order: 4; }
+    .hero .hero-actions { order: 5; }
+    .hero .install-cmd { order: 6; }
+
+    .hero-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 28px;
+      margin: 0 auto 36px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .badge + .hero-icon {
+      margin-top: 24px;
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      transition: all 0.2s;
+    }
+
+    .theme-toggle:hover { border-color: var(--text-muted); color: var(--text); }
+
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+
+    /* Light theme */
+    [data-theme="light"] {
+      --bg: #ffffff;
+      --bg-card: #f6f8fa;
+      --bg-card-hover: #eef1f5;
+      --text: #1f2328;
+      --text-muted: #656d76;
+      --border: #d0d7de;
+      --accent: #1a7f37;
+      --green-3: #1a7f37;
+      --green-4: #2da44e;
+    }
+
+    [data-theme="light"] nav {
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    [data-theme="light"] .theme-toggle .icon-sun { display: block; }
+    [data-theme="light"] .theme-toggle .icon-moon { display: none; }
+
+    [data-theme="light"] .hero::before {
+      background: radial-gradient(ellipse, rgba(26, 127, 55, 0.06) 0%, transparent 70%);
+    }
+
+    [data-theme="light"] .preview img {
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.12);
+    }
+
+    [data-theme="light"] .hero-icon {
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(57, 211, 83, 0.1);
+      border: 1px solid rgba(57, 211, 83, 0.2);
+      border-radius: 100px;
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-size: clamp(40px, 6vw, 64px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+
+    h1 .highlight {
+      background: linear-gradient(135deg, var(--green-3), var(--green-4));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-desc {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 540px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover { border-color: var(--text-muted); transform: translateY(-1px); }
+
+    /* Install command */
+    .install-cmd {
+      margin-top: 40px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 14px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .install-cmd:hover { border-color: var(--accent); }
+
+    .install-cmd code { color: var(--text); }
+
+    .install-cmd .copy-icon {
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+
+    .install-cmd:hover .copy-icon { color: var(--accent); }
+
+    /* Preview */
+    .preview {
+      max-width: 900px;
+      margin: 60px auto 0;
+      padding: 0 24px;
+    }
+
+    .preview img {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Heatmap decoration */
+    .heatmap-deco {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      margin-top: 48px;
+      flex-wrap: wrap;
+      opacity: 0.7;
+    }
+
+    .heatmap-deco .cell {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: var(--bg-card);
+    }
+
+    /* Features */
+    .features {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 120px 24px;
+    }
+
+    .section-label {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 60px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(57, 211, 83, 0.3);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+      background: rgba(57, 211, 83, 0.1);
+    }
+
+    .feature-card h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* How it works */
+    .how-it-works {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px 120px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      margin-top: 60px;
+    }
+
+    .step {
+      text-align: center;
+    }
+
+    .step-number {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(57, 211, 83, 0.1);
+      border: 2px solid var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .step h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .step code {
+      display: inline-block;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      margin-top: 8px;
+    }
+
+    /* Privacy */
+    .privacy {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .privacy-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 100px 24px;
+      text-align: center;
+    }
+
+    .privacy-icon {
+      font-size: 48px;
+      margin-bottom: 24px;
+    }
+
+    .privacy h2 {
+      font-size: clamp(28px, 4vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .privacy p {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 32px;
+      line-height: 1.7;
+    }
+
+    .privacy-badges {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .privacy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: rgba(57, 211, 83, 0.08);
+      border: 1px solid rgba(57, 211, 83, 0.15);
+      border-radius: 100px;
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .privacy-badge .check { color: var(--accent); }
+
+    /* CTA */
+    .cta {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 120px 24px;
+      text-align: center;
+    }
+
+    .cta h2 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-left {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .footer-left a {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .features-grid, .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .nav-links { display: none; }
+
+      .footer-inner {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+      }
+
+      .hero { padding: 130px 24px 60px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-actions { flex-direction: column; align-items: center; }
+      .btn { width: 100%; max-width: 280px; justify-content: center; }
+      .install-cmd { font-size: 12px; }
+      .privacy-badges { flex-direction: column; align-items: center; }
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero > * {
+      animation: fadeUp 0.6s ease-out both;
+    }
+
+    .hero > *:nth-child(2) { animation-delay: 0.1s; }
+    .hero > *:nth-child(3) { animation-delay: 0.2s; }
+    .hero > *:nth-child(4) { animation-delay: 0.3s; }
+    .hero > *:nth-child(5) { animation-delay: 0.4s; }
+
+    .preview { animation: fadeUp 0.8s ease-out 0.5s both; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <img src="assets/app-icon-small.png" alt="Token Jandi">
+        Token<span>Jandi</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">Install</a>
+        <a href="#privacy">Privacy</a>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+          <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <a href="https://github.com/wheon06/token-jandi" class="nav-cta">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="badge">macOS Menu Bar App</div>
+    <img src="assets/app-icon.png" alt="Token Jandi" class="hero-icon">
+    <h1>Claude Code 토큰 사용량을<br><span class="highlight">잔디로 시각화</span>하세요</h1>
+    <p class="hero-desc">
+      GitHub 스타일 히트맵으로 Claude Code 토큰 사용 패턴을 한눈에 파악하세요.
+      프라이버시를 지키면서, 메뉴바에서 바로.
+    </p>
+    <div class="hero-actions">
+      <a href="#how-it-works" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download
+      </a>
+      <a href="https://github.com/wheon06/token-jandi" class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </div>
+    <div class="install-cmd" onclick="copyInstall()" title="Click to copy">
+      <span>$</span>
+      <code>brew install --cask wheon06/tap/token-jandi</code>
+      <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    </div>
+  </section>
+
+  <!-- Preview -->
+  <div class="preview">
+    <img src="assets/preview.png" alt="Token Jandi Preview — macOS 메뉴바에서 토큰 사용량 히트맵을 보여주는 스크린샷" loading="lazy">
+  </div>
+
+  <!-- Features -->
+  <section class="features" id="features">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">당신의 Claude 사용 습관을 한눈에</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🟩</div>
+        <h3>잔디 히트맵</h3>
+        <p>GitHub 기여 그래프처럼 20주간의 토큰 사용량을 색상 강도로 시각화합니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>상세 차트</h3>
+        <p>일별·월별 사용량 차트로 토큰 소비 추이를 분석하고 패턴을 파악하세요.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔥</div>
+        <h3>스트릭 추적</h3>
+        <p>연속 사용일, 오늘 사용량, 주간 합계 등 핵심 통계를 한눈에 확인합니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>메뉴바 상주</h3>
+        <p>별도 앱 창 없이 메뉴바 아이콘 클릭 한 번으로 즉시 확인할 수 있습니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔄</div>
+        <h3>자동 새로고침</h3>
+        <p>1분~30분 간격으로 자동 갱신되어 항상 최신 사용량을 보여줍니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3>다국어 지원</h3>
+        <p>한국어와 영어를 지원하며, 시스템 언어를 자동으로 감지합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="section-label">Install</div>
+    <h2 class="section-title">3단계로 시작하세요</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Homebrew로 설치</h3>
+        <p>한 줄의 명령어로 간단하게 설치할 수 있습니다.</p>
+        <code>brew install --cask wheon06/tap/token-jandi</code>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>폴더 접근 허용</h3>
+        <p>Claude Code 세션 로그가 저장된 <code>~/.claude</code> 폴더 접근을 허용해주세요.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>잔디 확인</h3>
+        <p>메뉴바에 나타난 잔디 아이콘을 클릭하면 사용량 히트맵을 바로 볼 수 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Privacy -->
+  <section class="privacy" id="privacy">
+    <div class="privacy-inner">
+      <div class="privacy-icon">🔒</div>
+      <h2>프라이버시 최우선</h2>
+      <p>Token Jandi는 어떤 데이터도 외부로 전송하지 않습니다. 모든 분석은 로컬에서 이루어집니다.</p>
+      <div class="privacy-badges">
+        <span class="privacy-badge"><span class="check">✓</span> 데이터 수집 없음</span>
+        <span class="privacy-badge"><span class="check">✓</span> 서드파티 SDK 없음</span>
+        <span class="privacy-badge"><span class="check">✓</span> 로컬 전용 분석</span>
+        <span class="privacy-badge"><span class="check">✓</span> 오픈소스 (MIT)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <h2>지금 시작하세요</h2>
+    <p>Claude Code를 사용하고 있다면, 당신의 토큰 사용 패턴을 확인해보세요.</p>
+    <div class="hero-actions">
+      <a href="https://github.com/wheon06/token-jandi/releases" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        최신 릴리즈 다운로드
+      </a>
+      <a href="https://github.com/wheon06/token-jandi" class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        GitHub Star
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">
+        Made by <a href="https://github.com/wheon06">@wheon06</a> · MIT License
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/wheon06/token-jandi">GitHub</a>
+        <a href="https://github.com/wheon06/token-jandi/releases">Releases</a>
+        <a href="https://github.com/wheon06/token-jandi/blob/main/PRIVACY.md">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    }
+
+    // Load saved theme
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved) {
+        document.documentElement.setAttribute('data-theme', saved);
+      } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+
+    function copyInstall() {
+      navigator.clipboard.writeText('brew install --cask wheon06/tap/token-jandi').then(() => {
+        const el = document.querySelector('.install-cmd code');
+        const orig = el.textContent;
+        el.textContent = 'Copied!';
+        setTimeout(() => el.textContent = orig, 1500);
+      });
+    }
+
+    // Intersection Observer for fade-in animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animation = 'fadeUp 0.5s ease-out both';
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.feature-card, .step').forEach(el => {
+      el.style.opacity = '0';
+      observer.observe(el);
+    });
+  </script>
+
+</body>
+</html>
