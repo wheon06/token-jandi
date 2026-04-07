@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var localization: LocalizationManager
     @ObservedObject var viewModel: HeatmapViewModel
+    @ObservedObject var usageService: AnthropicUsageService
     #if !APP_STORE
     @StateObject private var updateChecker = UpdateChecker.shared
     #endif
@@ -10,132 +11,155 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Menu bar usage toggle
-            Toggle(isOn: $showMenuBarUsage) {
-                Label(L("settings.menuBarUsage"), systemImage: "menubar.rectangle")
-                    .font(.caption)
-            }
-            .toggleStyle(.switch)
-
-            // Auto refresh interval
-            HStack {
-                Label(L("settings.refreshInterval"), systemImage: "arrow.clockwise")
-                    .font(.caption)
-                Spacer()
-                Picker("", selection: $viewModel.refreshIntervalRaw) {
-                    ForEach(RefreshInterval.allCases) { interval in
-                        Text(interval.label).tag(interval.rawValue)
-                    }
-                }
-                .pickerStyle(.menu)
-                .frame(width: 100)
-            }
-
-            Divider()
-
-            // Language
-            HStack {
-                Label(L("settings.language"), systemImage: "globe")
-                    .font(.caption)
-                Spacer()
-                Picker("", selection: $localization.selectedLanguage) {
-                    ForEach(AppLanguage.allCases) { lang in
-                        Text(lang.displayName).tag(lang)
-                    }
-                }
-                .pickerStyle(.menu)
-                .frame(width: 140)
-            }
-
-            Divider()
-
-            // Data source / folder
-            HStack {
-                Label(L("settings.source"), systemImage: "folder")
-                    .font(.caption)
-                Spacer()
-                if let url = viewModel.folderAccessManager?.claudeDirectoryURL {
-                    Text(url.path.replacingOccurrences(of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~"))
+                // Menu bar usage toggle
+                Toggle(isOn: $showMenuBarUsage) {
+                    Label(L("settings.menuBarUsage"), systemImage: "menubar.rectangle")
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                } else {
-                    Text("~/.claude/")
+                }
+                .toggleStyle(.switch)
+
+                // Menu bar display mode
+                HStack {
+                    Label(L("settings.displayMode"), systemImage: "textformat.123")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                    Spacer()
+                    Picker("", selection: Binding(
+                        get: { viewModel.displayMode },
+                        set: { newMode in
+                            if newMode == .percentage && !usageService.hasCredentials {
+                                OAuthLoginManager.shared.startLogin()
+                            }
+                            viewModel.displayMode = newMode
+                        }
+                    )) {
+                        ForEach(MenuBarDisplayMode.allCases) { mode in
+                            Text(mode.label).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 120)
                 }
-                Button(action: { viewModel.folderAccessManager?.requestFolderAccess() }) {
-                    Image(systemName: "folder.badge.gearshape")
-                        .font(.caption2)
+
+                // Auto refresh interval
+                HStack {
+                    Label(L("settings.refreshInterval"), systemImage: "arrow.clockwise")
+                        .font(.caption)
+                    Spacer()
+                    Picker("", selection: $viewModel.refreshIntervalRaw) {
+                        ForEach(RefreshInterval.allCases) { interval in
+                            Text(interval.label).tag(interval.rawValue)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 100)
                 }
-                .buttonStyle(.plain)
-            }
 
-            Divider()
+                Divider()
 
-            // Update (direct distribution only)
-            #if !APP_STORE
-            UpdateRowView(checker: updateChecker)
-            Divider()
-            #endif
+                // Language
+                HStack {
+                    Label(L("settings.language"), systemImage: "globe")
+                        .font(.caption)
+                    Spacer()
+                    Picker("", selection: $localization.selectedLanguage) {
+                        ForEach(AppLanguage.allCases) { lang in
+                            Text(lang.displayName).tag(lang)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 140)
+                }
 
-            // Author
-            HStack {
-                Label(L("settings.author"), systemImage: "person")
-                    .font(.caption)
-                Spacer()
-                Text("Heeyeon Lee")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+                Divider()
 
-            // Version
-            HStack {
-                Label(L("settings.version"), systemImage: "info.circle")
-                    .font(.caption)
-                Spacer()
-                #if APP_STORE
-                Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                #else
-                Text("v\(UpdateChecker.currentVersion)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                // Data source / folder
+                HStack {
+                    Label(L("settings.source"), systemImage: "folder")
+                        .font(.caption)
+                    Spacer()
+                    if let url = viewModel.folderAccessManager?.claudeDirectoryURL {
+                        Text(url.path.replacingOccurrences(of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~"))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    } else {
+                        Text("~/.claude/")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Button(action: { viewModel.folderAccessManager?.requestFolderAccess() }) {
+                        Image(systemName: "folder.badge.gearshape")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Divider()
+
+                // Update (direct distribution only)
+                #if !APP_STORE
+                UpdateRowView(checker: updateChecker)
+                Divider()
                 #endif
-            }
 
-            // Privacy Policy
-            HStack {
-                Label(L("settings.privacy"), systemImage: "hand.raised")
-                    .font(.caption)
-                Spacer()
-                Button(action: {
-                    if let url = URL(string: "https://github.com/wheon06/token-jandi/blob/main/PRIVACY.md") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }) {
-                    Image(systemName: "arrow.up.right.square")
-                        .font(.caption2)
-                }
-                .buttonStyle(.plain)
-            }
-
-            Divider()
-
-            // Quit
-            HStack {
-                Spacer()
-                Button(action: { NSApplication.shared.terminate(nil) }) {
-                    Text(L("action.quit"))
+                // Author
+                HStack {
+                    Label(L("settings.author"), systemImage: "person")
                         .font(.caption)
+                    Spacer()
+                    Text("Heeyeon Lee")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
-                .buttonStyle(.plain)
-                .foregroundColor(.red)
-            }
+
+                // Version
+                HStack {
+                    Label(L("settings.version"), systemImage: "info.circle")
+                        .font(.caption)
+                    Spacer()
+                    #if APP_STORE
+                    Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    #else
+                    Text("v\(UpdateChecker.currentVersion)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    #endif
+                }
+
+                // Privacy Policy
+                HStack {
+                    Label(L("settings.privacy"), systemImage: "hand.raised")
+                        .font(.caption)
+                    Spacer()
+                    Button(action: {
+                        if let url = URL(string: "https://github.com/wheon06/token-jandi/blob/main/PRIVACY.md") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }) {
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Divider()
+
+                // Quit
+                HStack {
+                    Spacer()
+                    Button(action: { NSApplication.shared.terminate(nil) }) {
+                        Text(L("action.quit"))
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.red)
+                }
         }
         .padding(.vertical, 4)
     }
+
 }
 
 #if !APP_STORE

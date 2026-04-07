@@ -118,12 +118,6 @@ func colorForLevel(_ level: Int) -> Color {
     }
 }
 
-func formatNumber(_ n: Int) -> String {
-    let formatter = NumberFormatter()
-    formatter.numberStyle = .decimal
-    return formatter.string(from: NSNumber(value: n)) ?? "\(n)"
-}
-
 /// Localization helper
 func L(_ key: String) -> String {
     LocalizationManager.shared.localized(key)

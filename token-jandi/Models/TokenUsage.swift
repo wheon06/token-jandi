@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct TokenUsage: Identifiable {
     let id = UUID()
@@ -54,6 +55,18 @@ func formatTokenCount(_ count: Int) -> String {
         return String(format: "%.1fK", Double(count) / 1_000)
     }
     return "\(count)"
+}
+
+/// Color representing usage level: green (<80%), orange (80-100%), red (100%+)
+func usageLevelColor(for ratio: Double) -> Color {
+    if ratio >= 1.0 { return .red }
+    if ratio >= 0.8 { return .orange }
+    return .green
+}
+
+/// Format a 0.0~1.0+ ratio as a percentage string (e.g. "45%")
+func formatPercent(_ ratio: Double) -> String {
+    "\(Int(ratio * 100))%"
 }
 
 private func shortModelName(_ name: String) -> String {

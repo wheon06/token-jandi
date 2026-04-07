@@ -23,6 +23,20 @@ enum RefreshInterval: Int, CaseIterable, Identifiable {
     }
 }
 
+enum MenuBarDisplayMode: String, CaseIterable, Identifiable {
+    case tokens = "tokens"
+    case percentage = "percentage"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .tokens: return L("settings.displayTokens")
+        case .percentage: return L("settings.displayPercentage")
+        }
+    }
+}
+
 class HeatmapViewModel: ObservableObject {
     @Published var cells: [DayCell] = []
     @Published var selectedCell: DayCell?
@@ -31,6 +45,19 @@ class HeatmapViewModel: ObservableObject {
     @AppStorage("refreshInterval") var refreshIntervalRaw: Int = RefreshInterval.min5.rawValue {
         didSet { setupTimer() }
     }
+
+    @AppStorage("menuBarDisplayMode") private var menuBarDisplayModeRaw: String = MenuBarDisplayMode.tokens.rawValue
+
+    var displayMode: MenuBarDisplayMode {
+        get { MenuBarDisplayMode(rawValue: menuBarDisplayModeRaw) ?? .tokens }
+        set { menuBarDisplayModeRaw = newValue.rawValue }
+    }
+
+    private static let monthFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM"
+        return f
+    }()
 
     private let calendar = Calendar.current
     private let weeksToShow = 20
@@ -109,8 +136,6 @@ class HeatmapViewModel: ObservableObject {
 
     /// Monthly aggregated data
     var monthlyData: [(label: String, tokens: Int)] {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM"
         var grouped: [Int: (String, Int)] = [:]
 
         for cell in cells {
@@ -121,7 +146,7 @@ class HeatmapViewModel: ObservableObject {
             if let existing = grouped[key] {
                 grouped[key] = (existing.0, existing.1 + tokens)
             } else {
-                grouped[key] = (formatter.string(from: cell.date), tokens)
+                grouped[key] = (Self.monthFormatter.string(from: cell.date), tokens)
             }
         }
 
@@ -148,15 +173,12 @@ class HeatmapViewModel: ObservableObject {
 
     var monthLabels: [(String, Int)] {
         var labels: [(String, Int)] = []
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM"
-
         var lastMonth = -1
         for (weekIndex, week) in weeks.enumerated() {
             guard let firstDay = week.first else { continue }
             let month = calendar.component(.month, from: firstDay.date)
             if month != lastMonth {
-                labels.append((formatter.string(from: firstDay.date), weekIndex))
+                labels.append((Self.monthFormatter.string(from: firstDay.date), weekIndex))
                 lastMonth = month
             }
         }
