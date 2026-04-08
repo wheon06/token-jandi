@@ -76,6 +76,10 @@ class HeatmapViewModel: ObservableObject {
             .autoconnect()
             .sink { [weak self] _ in
                 self?.loadData()
+                let usageService = AnthropicUsageService.shared
+                if usageService.hasCredentials {
+                    usageService.fetchUsage(force: true)
+                }
             }
     }
 

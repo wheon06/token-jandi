@@ -73,6 +73,7 @@ struct MenuBarPopoverView: View {
                 viewModel.folderAccessManager = folderAccess
                 viewModel.loadData()
             }
+            usageService.loadCredentials()
             if usageService.hasCredentials {
                 usageService.fetchUsage()
             }

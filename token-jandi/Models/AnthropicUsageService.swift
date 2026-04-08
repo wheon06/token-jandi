@@ -268,13 +268,19 @@ class AnthropicUsageService: ObservableObject {
                     return
                 }
 
-                // Token expired — try refresh
+                // Token expired — try refresh, then reload from Keychain
                 if (httpResponse.statusCode == 401 || httpResponse.statusCode == 403) && retryOnAuthFailure {
                     self?.refreshAccessToken { success in
                         if success {
                             self?.performFetchUsage(retryOnAuthFailure: false)
                         } else {
-                            self?.fetchState = .error(L("usage.authFailed"))
+                            // Refresh failed — reload from Keychain and retry once
+                            self?.loadCredentials()
+                            if self?.hasCredentials == true {
+                                self?.performFetchUsage(retryOnAuthFailure: false)
+                            } else {
+                                self?.fetchState = .error(L("usage.authFailed"))
+                            }
                         }
                     }
                     return
