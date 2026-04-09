@@ -20,6 +20,7 @@ xcodebuild archive \
     -scheme "${SCHEME}" \
     -archivePath "${ARCHIVE_PATH}" \
     -configuration Release \
+    CODE_SIGN_STYLE=Manual \
     CODE_SIGN_IDENTITY="${SIGN_IDENTITY}" \
     DEVELOPMENT_TEAM="8ZJ7CHXMW2" \
     2>&1 | tail -3
@@ -51,24 +52,25 @@ xcodebuild -exportArchive \
 echo "→ Notarizing..."
 rm -rf "${DIST_DIR}"
 mkdir -p "${DIST_DIR}"
+BUNDLE_NAME="token-jandi"
 cd "${EXPORT_PATH}"
-zip -r "../../${DIST_DIR}/${APP_NAME}-${VERSION}.zip" "${APP_NAME}.app"
+zip -r "../../${DIST_DIR}/Token.Jandi-${VERSION}.zip" "${BUNDLE_NAME}.app"
 cd ../..
 
-xcrun notarytool submit "${DIST_DIR}/${APP_NAME}-${VERSION}.zip" \
+xcrun notarytool submit "${DIST_DIR}/Token.Jandi-${VERSION}.zip" \
     --keychain-profile "AC_PASSWORD" \
     --wait
 
 # 4. Staple
 echo "→ Stapling..."
-xcrun stapler staple "${EXPORT_PATH}/${APP_NAME}.app"
+xcrun stapler staple "${EXPORT_PATH}/${BUNDLE_NAME}.app"
 
 # 5. Re-zip with stapled app
-rm "${DIST_DIR}/${APP_NAME}-${VERSION}.zip"
+rm "${DIST_DIR}/Token.Jandi-${VERSION}.zip"
 cd "${EXPORT_PATH}"
-zip -r "../../${DIST_DIR}/${APP_NAME}-${VERSION}.zip" "${APP_NAME}.app"
+zip -r "../../${DIST_DIR}/Token.Jandi-${VERSION}.zip" "${BUNDLE_NAME}.app"
 cd ../..
 
 echo ""
 echo "=== Done ==="
-echo "✅ ${DIST_DIR}/${APP_NAME}-${VERSION}.zip (signed + notarized)"
+echo "✅ ${DIST_DIR}/Token.Jandi-${VERSION}.zip (signed + notarized)"
