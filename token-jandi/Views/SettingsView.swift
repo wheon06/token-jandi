@@ -60,7 +60,7 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 } else {
-                    Text("~/.claude/")
+                    Text("~/")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

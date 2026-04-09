@@ -1,18 +1,88 @@
 import Foundation
 
-struct TokenUsage: Identifiable {
-    let id = UUID()
-    let date: Date
-    let messageCount: Int
-    let inputTokens: Int
-    let outputTokens: Int
-    let cacheReadTokens: Int
-    let cacheCreationTokens: Int
-    let tokensByModel: [String: Int]
-    let apiCallCount: Int
+enum UsageProvider: String, CaseIterable, Hashable {
+    case claude
+    case codex
+
+    var title: String {
+        switch self {
+        case .claude: return L("source.claude")
+        case .codex: return L("source.codex")
+        }
+    }
+}
+
+enum UsageSourceFilter: String, CaseIterable, Identifiable {
+    case all
+    case claude
+    case codex
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all: return L("source.all")
+        case .claude: return L("source.claude")
+        case .codex: return L("source.codex")
+        }
+    }
+
+    var provider: UsageProvider? {
+        switch self {
+        case .all: return nil
+        case .claude: return .claude
+        case .codex: return .codex
+        }
+    }
+}
+
+struct UsageTotals {
+    var messageCount: Int = 0
+    var inputTokens: Int = 0
+    var outputTokens: Int = 0
+    var cacheReadTokens: Int = 0
+    var cacheCreationTokens: Int = 0
+    var tokensByModel: [String: Int] = [:]
+    var apiCallCount: Int = 0
 
     var totalTokens: Int {
         inputTokens + outputTokens + cacheReadTokens + cacheCreationTokens
+    }
+
+    var hasUsage: Bool {
+        totalTokens > 0 || messageCount > 0 || apiCallCount > 0
+    }
+
+    mutating func merge(_ other: UsageTotals) {
+        messageCount += other.messageCount
+        inputTokens += other.inputTokens
+        outputTokens += other.outputTokens
+        cacheReadTokens += other.cacheReadTokens
+        cacheCreationTokens += other.cacheCreationTokens
+        apiCallCount += other.apiCallCount
+
+        for (model, tokens) in other.tokensByModel {
+            tokensByModel[model, default: 0] += tokens
+        }
+    }
+}
+
+struct TokenUsage: Identifiable {
+    let id = UUID()
+    let date: Date
+    let totals: UsageTotals
+    let sourceBreakdown: [UsageProvider: UsageTotals]
+
+    var messageCount: Int { totals.messageCount }
+    var inputTokens: Int { totals.inputTokens }
+    var outputTokens: Int { totals.outputTokens }
+    var cacheReadTokens: Int { totals.cacheReadTokens }
+    var cacheCreationTokens: Int { totals.cacheCreationTokens }
+    var tokensByModel: [String: Int] { totals.tokensByModel }
+    var apiCallCount: Int { totals.apiCallCount }
+
+    var totalTokens: Int {
+        totals.totalTokens
     }
 
     /// 0 = no usage, 1~4 = intensity levels based on total tokens
@@ -36,6 +106,14 @@ struct TokenUsage: Identifiable {
         tokensByModel.map { model, tokens in
             "\(shortModelName(model)): \(formatTokenCount(tokens))"
         }.joined(separator: ", ")
+    }
+
+    var activeSources: [UsageProvider] {
+        UsageProvider.allCases.filter { sourceBreakdown[$0]?.hasUsage == true }
+    }
+
+    func totalTokens(for provider: UsageProvider) -> Int {
+        sourceBreakdown[provider]?.totalTokens ?? 0
     }
 }
 

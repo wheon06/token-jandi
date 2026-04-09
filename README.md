@@ -9,7 +9,7 @@
 
 ## Introdution
 
-Check your Claude Code token usage easily from the MacOS status bar.
+Check your Claude Code and Codex token usage easily from the macOS status bar.
 
 ## Preview 👀
 ![](./.github/images/preview.png)

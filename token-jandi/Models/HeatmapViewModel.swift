@@ -27,6 +27,11 @@ class HeatmapViewModel: ObservableObject {
     @Published var cells: [DayCell] = []
     @Published var selectedCell: DayCell?
     @Published var hasClaudeData = false
+    @Published var selectedSource: UsageSourceFilter = .all {
+        didSet {
+            buildCells(from: dailyUsage)
+        }
+    }
 
     @AppStorage("refreshInterval") var refreshIntervalRaw: Int = RefreshInterval.min5.rawValue {
         didSet { setupTimer() }
@@ -35,6 +40,7 @@ class HeatmapViewModel: ObservableObject {
     private let calendar = Calendar.current
     private let weeksToShow = 20
     private var timer: AnyCancellable?
+    private var dailyUsage: [Date: DailyUsageData] = [:]
     var folderAccessManager: FolderAccessManager?
 
     init() {
@@ -53,23 +59,20 @@ class HeatmapViewModel: ObservableObject {
     }
 
     func loadData() {
-        // Use folder access manager URL if available (sandbox), otherwise default
+        // Use the selected root URL if available (sandbox), otherwise default to the user's home folder.
         let parser = ClaudeLogParser(claudeDir: folderAccessManager?.claudeDirectoryURL)
 
-        let claudeDir = parser.claudeDirURL.appendingPathComponent("projects")
-        hasClaudeData = FileManager.default.fileExists(atPath: claudeDir.path)
-
-        let dailyUsage = parser.parseDailyUsage()
+        dailyUsage = parser.parseDailyUsage()
+        hasClaudeData = parser.hasAnyDataSource && dailyUsage.values.contains { $0.filtered(by: .all) != nil }
         buildCells(from: dailyUsage)
-
-        if hasClaudeData && cells.allSatisfy({ $0.usage == nil }) {
-            hasClaudeData = false
-        }
     }
 
     var todayUsage: TokenUsage? {
-        let today = calendar.startOfDay(for: Date())
-        return cells.first(where: { calendar.isDate($0.date, inSameDayAs: today) })?.usage
+        usage(for: Date(), filter: selectedSource)
+    }
+
+    var allSourcesTodayUsage: TokenUsage? {
+        usage(for: Date(), filter: .all)
     }
 
     var currentStreak: Int {
@@ -166,6 +169,7 @@ class HeatmapViewModel: ObservableObject {
     private func buildCells(from dailyUsage: [Date: DailyUsageData]) {
         let today = calendar.startOfDay(for: Date())
         let totalDays = weeksToShow * 7
+        let selectedDate = selectedCell?.date
 
         guard let rawStart = calendar.date(byAdding: .day, value: -(totalDays - 1), to: today) else { return }
         let rawWeekday = calendar.component(.weekday, from: rawStart)
@@ -173,27 +177,23 @@ class HeatmapViewModel: ObservableObject {
 
         let actualDays = calendar.dateComponents([.day], from: start, to: today).day! + 1
 
-        cells = (0..<actualDays).map { offset in
+        let rebuiltCells = (0..<actualDays).map { offset in
             let date = calendar.date(byAdding: .day, value: offset, to: start)!
             let day = calendar.startOfDay(for: date)
-
-            let usage: TokenUsage?
-            if let data = dailyUsage[day], data.totalTokens > 0 || data.messageCount > 0 {
-                usage = TokenUsage(
-                    date: day,
-                    messageCount: data.messageCount,
-                    inputTokens: data.inputTokens,
-                    outputTokens: data.outputTokens,
-                    cacheReadTokens: data.cacheReadTokens,
-                    cacheCreationTokens: data.cacheCreationTokens,
-                    tokensByModel: data.tokensByModel,
-                    apiCallCount: data.apiCallCount
-                )
-            } else {
-                usage = nil
-            }
+            let usage = dailyUsage[day]?.filtered(by: selectedSource)
 
             return DayCell(date: day, usage: usage)
         }
+
+        cells = rebuiltCells
+
+        if let selectedDate {
+            selectedCell = rebuiltCells.first(where: { calendar.isDate($0.date, inSameDayAs: selectedDate) })
+        }
+    }
+
+    private func usage(for date: Date, filter: UsageSourceFilter) -> TokenUsage? {
+        let day = calendar.startOfDay(for: date)
+        return dailyUsage[day]?.filtered(by: filter)
     }
 }

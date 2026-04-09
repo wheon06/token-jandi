@@ -86,6 +86,8 @@ struct HeatmapContentView: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            SourceFilterChips(selection: $viewModel.selectedSource)
+
             HStack(spacing: 10) {
                 StatCard(
                     title: L("stats.today"),
@@ -115,7 +117,7 @@ struct HeatmapContentView: View {
 
             // Simple inline detail on hover
             if let selected = viewModel.selectedCell {
-                SimpleDetailView(cell: selected)
+                SimpleDetailView(cell: selected, selectedSource: viewModel.selectedSource)
             }
         }
     }
@@ -124,26 +126,70 @@ struct HeatmapContentView: View {
 /// Minimal detail shown on heatmap hover — just date + total
 struct SimpleDetailView: View {
     let cell: DayCell
+    let selectedSource: UsageSourceFilter
 
     var body: some View {
-        HStack(spacing: 8) {
-            Text(dateString)
-                .foregroundColor(.secondary)
-            if let usage = cell.usage {
-                Text(usage.totalTokensFormatted)
-                    .fontWeight(.semibold)
-            } else {
-                Text(L("heatmap.noUsage"))
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Label(dateString, systemImage: "calendar")
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
+
+                Spacer()
+
+                if let usage = cell.usage {
+                    Text(usage.totalTokensFormatted)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                } else {
+                    Text(L("heatmap.noUsage"))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            if let usage = cell.usage, !visibleSources(for: usage).isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(visibleSources(for: usage), id: \.self) { source in
+                        SourceTokenBadge(
+                            title: source.title,
+                            value: formatTokenCount(usage.totalTokens(for: source)),
+                            tint: sourceTint(for: source)
+                        )
+                    }
+                }
             }
         }
-        .font(.caption)
+        .padding(10)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var dateString: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MM.dd (E)"
+        formatter.locale = Locale.current
+        formatter.setLocalizedDateFormatFromTemplate("M d EEE")
         return formatter.string(from: cell.date)
+    }
+
+    private func visibleSources(for usage: TokenUsage) -> [UsageProvider] {
+        switch selectedSource {
+        case .all:
+            return usage.activeSources
+        case .claude:
+            return usage.totalTokens(for: .claude) > 0 ? [.claude] : []
+        case .codex:
+            return usage.totalTokens(for: .codex) > 0 ? [.codex] : []
+        }
+    }
+
+    private func sourceTint(for source: UsageProvider) -> Color {
+        switch source {
+        case .claude:
+            return .mint
+        case .codex:
+            return .green
+        }
     }
 }
 
@@ -159,6 +205,8 @@ struct DetailContentView: View {
 
     var body: some View {
         VStack(spacing: 10) {
+            SourceFilterChips(selection: $viewModel.selectedSource)
+
             // Period toggle
             Picker("", selection: $period) {
                 Text(L("chart.daily")).tag(ChartPeriod.daily)
@@ -283,6 +331,61 @@ struct EmptyStateView: View {
 }
 
 // MARK: - Shared
+
+struct SourceFilterChips: View {
+    @Binding var selection: UsageSourceFilter
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(UsageSourceFilter.allCases) { source in
+                Button(action: { selection = source }) {
+                    Text(source.title)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(selection == source ? .green : .primary)
+                        .padding(.vertical, 5)
+                        .padding(.horizontal, 10)
+                        .background(
+                            Capsule()
+                                .fill(selection == source
+                                      ? Color.green.opacity(0.15)
+                                      : Color(nsColor: .controlBackgroundColor))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+        }
+    }
+}
+
+struct SourceTokenBadge: View {
+    let title: String
+    let value: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(tint)
+                .frame(width: 6, height: 6)
+
+            Text(title)
+                .foregroundColor(.secondary)
+
+            Text(value)
+                .fontWeight(.semibold)
+        }
+        .font(.system(size: 10, weight: .medium))
+        .padding(.vertical, 4)
+        .padding(.horizontal, 9)
+        .background(Capsule().fill(Color(nsColor: .windowBackgroundColor).opacity(0.9)))
+        .overlay(
+            Capsule()
+                .strokeBorder(tint.opacity(0.25), lineWidth: 1)
+        )
+    }
+}
 
 struct StatCard: View {
     let title: String

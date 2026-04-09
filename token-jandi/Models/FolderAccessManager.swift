@@ -4,12 +4,30 @@ import Combine
 
 class FolderAccessManager: ObservableObject {
     @Published var hasAccess = false
+    // This stores the selected data root (preferably the home folder) so the app can
+    // discover both `.claude` and `.codex` inside it when available.
     @Published var claudeDirectoryURL: URL?
 
     private let bookmarkKey = "claudeFolderBookmark"
 
+    private var isSandboxed: Bool {
+        ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
+    }
+
     init() {
-        restoreBookmark()
+        if isSandboxed {
+            restoreBookmark()
+        } else {
+            let homeURL = FileManager.default.homeDirectoryForCurrentUser
+            let claudeDir = homeURL.appendingPathComponent(".claude")
+            let codexDir = homeURL.appendingPathComponent(".codex")
+
+            if FileManager.default.fileExists(atPath: claudeDir.path)
+                || FileManager.default.fileExists(atPath: codexDir.path) {
+                claudeDirectoryURL = homeURL
+                hasAccess = true
+            }
+        }
     }
 
     // MARK: - Request access via NSOpenPanel
@@ -24,24 +42,25 @@ class FolderAccessManager: ObservableObject {
         panel.allowsMultipleSelection = false
         panel.prompt = L("folder.select")
         panel.message = L("folder.message")
-
-        // Start at home directory — user just clicks "Select"
         panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
 
         panel.begin { [weak self] response in
-            guard response == .OK, let selectedURL = panel.url else { return }
+            guard let self = self, response == .OK, let selectedURL = panel.url else { return }
 
-            // Auto-detect .claude folder inside selected directory
-            let claudeDir = selectedURL.appendingPathComponent(".claude")
-            let targetURL = FileManager.default.fileExists(atPath: claudeDir.path)
-                ? claudeDir
-                : selectedURL
+            // Keep the selected folder as the root so sandboxed builds can read
+            // both `.claude` and `.codex` when the user selects their home folder.
+            let targetURL = selectedURL
 
-            self?.saveBookmark(for: targetURL)
+            if self.isSandboxed {
+                self.saveBookmark(for: targetURL)
+            } else {
+                self.claudeDirectoryURL = targetURL
+                self.hasAccess = true
+            }
         }
     }
 
-    // MARK: - Bookmark persistence
+    // MARK: - Bookmark persistence (sandbox only)
 
     private func saveBookmark(for url: URL) {
         do {
