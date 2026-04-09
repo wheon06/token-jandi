@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://tokenjandi.kr/sitemap.xml
+Sitemap: http://tokenjandi.kr/sitemap.xml
