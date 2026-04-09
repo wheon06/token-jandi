@@ -118,7 +118,7 @@ struct TokenUsage: Identifiable {
 }
 
 struct DayCell: Identifiable {
-    let id = UUID()
+    var id: Date { date }
     let date: Date
     let usage: TokenUsage?
 

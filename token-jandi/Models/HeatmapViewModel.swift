@@ -175,10 +175,11 @@ class HeatmapViewModel: ObservableObject {
         let rawWeekday = calendar.component(.weekday, from: rawStart)
         guard let start = calendar.date(byAdding: .day, value: -(rawWeekday - 1), to: rawStart) else { return }
 
-        let actualDays = calendar.dateComponents([.day], from: start, to: today).day! + 1
+        guard let actualDays = calendar.dateComponents([.day], from: start, to: today).day.map({ $0 + 1 }),
+              actualDays > 0 else { return }
 
-        let rebuiltCells = (0..<actualDays).map { offset in
-            let date = calendar.date(byAdding: .day, value: offset, to: start)!
+        let rebuiltCells = (0..<actualDays).compactMap { offset -> DayCell? in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: start) else { return nil }
             let day = calendar.startOfDay(for: date)
             let usage = dailyUsage[day]?.filtered(by: selectedSource)
 

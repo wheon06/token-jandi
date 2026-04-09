@@ -49,15 +49,17 @@ struct GrassHeatmapView: View {
                     ForEach(Array(viewModel.weeks.enumerated()), id: \.offset) { _, week in
                         VStack(spacing: cellSpacing) {
                             ForEach(week) { cell in
-                                GrassCellView(cell: cell, size: cellSize)
-                                    .onTapGesture {
+                                Button {
+                                    viewModel.selectedCell = cell
+                                } label: {
+                                    GrassCellView(cell: cell, size: cellSize)
+                                }
+                                .buttonStyle(.plain)
+                                .onHover { hovering in
+                                    if hovering {
                                         viewModel.selectedCell = cell
                                     }
-                                    .onHover { hovering in
-                                        if hovering {
-                                            viewModel.selectedCell = cell
-                                        }
-                                    }
+                                }
                             }
                         }
                     }
