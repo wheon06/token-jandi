@@ -59,7 +59,7 @@ class UpdateChecker: ObservableObject {
                     })?["browser_download_url"] as? String
                 }
 
-                if version.compare(Self.currentVersion, options: .numeric) == .orderedDescending {
+                if self.isNewerVersion(version, than: Self.currentVersion) {
                     self.state = .available(version: version)
                 } else {
                     self.state = .upToDate
@@ -103,6 +103,22 @@ class UpdateChecker: ObservableObject {
         objc_setAssociatedObject(task, "progressObservation", observation, .OBJC_ASSOCIATION_RETAIN)
 
         task.resume()
+    }
+
+    // MARK: - Version comparison
+
+    /// Compare semver strings, treating missing components as 0 (e.g. "1.1" == "1.1.0").
+    private func isNewerVersion(_ remote: String, than local: String) -> Bool {
+        let r = remote.split(separator: ".").compactMap { Int($0) }
+        let l = local.split(separator: ".").compactMap { Int($0) }
+        let count = max(r.count, l.count)
+        for i in 0..<count {
+            let rv = i < r.count ? r[i] : 0
+            let lv = i < l.count ? l[i] : 0
+            if rv > lv { return true }
+            if rv < lv { return false }
+        }
+        return false
     }
 
     // MARK: - Install
