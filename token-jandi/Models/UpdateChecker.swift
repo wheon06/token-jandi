@@ -15,7 +15,9 @@ enum UpdateState: Equatable {
 class UpdateChecker: ObservableObject {
     static let shared = UpdateChecker()
 
-    static let currentVersion = "1.0.0"
+    static let currentVersion: String = {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+    }()
     static let repoOwner = "wheon06"
     static let repoName = "token-jandi"
 
@@ -143,10 +145,25 @@ class UpdateChecker: ObservableObject {
             #!/bin/bash
             sleep 1
             rm -rf "\(backupURL.path)"
-            mv "\(currentAppURL.path)" "\(backupURL.path)" 2>/dev/null
-            cp -R "\(newApp.path)" "\(currentAppURL.path)"
-            open "\(currentAppURL.path)"
-            rm -rf "\(backupURL.path)"
+            if mv "\(currentAppURL.path)" "\(backupURL.path)" 2>/dev/null; then
+                if cp -R "\(newApp.path)" "\(currentAppURL.path)"; then
+                    open "\(currentAppURL.path)"
+                    rm -rf "\(backupURL.path)"
+                else
+                    # cp failed – restore backup
+                    mv "\(backupURL.path)" "\(currentAppURL.path)" 2>/dev/null
+                    open "\(currentAppURL.path)"
+                fi
+            else
+                # mv failed (permissions) – try with admin privileges
+                osascript -e 'do shell script "rm -rf \\"\(backupURL.path)\\" && mv \\"\(currentAppURL.path)\\" \\"\(backupURL.path)\\" && cp -R \\"\(newApp.path)\\" \\"\(currentAppURL.path)\\"" with administrator privileges' 2>/dev/null
+                if [ $? -eq 0 ]; then
+                    open "\(currentAppURL.path)"
+                    rm -rf "\(backupURL.path)"
+                else
+                    open "\(currentAppURL.path)"
+                fi
+            fi
             rm -rf "\(tempDir.path)"
             """
 
