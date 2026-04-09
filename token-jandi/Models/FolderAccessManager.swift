@@ -41,14 +41,14 @@ class FolderAccessManager: ObservableObject {
         panel.canCreateDirectories = false
         panel.allowsMultipleSelection = false
         panel.prompt = L("folder.select")
-        panel.message = L("folder.message")
+        panel.message = needsMigration
+            ? L("folder.migrationMessage")
+            : L("folder.message")
         panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
 
         panel.begin { [weak self] response in
             guard let self = self, response == .OK, let selectedURL = panel.url else { return }
 
-            // Keep the selected folder as the root so sandboxed builds can read
-            // both `.claude` and `.codex` when the user selects their home folder.
             let targetURL = selectedURL
 
             if self.isSandboxed {
@@ -57,6 +57,7 @@ class FolderAccessManager: ObservableObject {
                 self.claudeDirectoryURL = targetURL
                 self.hasAccess = true
             }
+            self.needsMigration = false
         }
     }
 
@@ -76,6 +77,12 @@ class FolderAccessManager: ObservableObject {
         }
     }
 
+    private static let hiddenDataDirs: Set<String> = [".claude", ".codex"]
+
+    /// `true` when the saved bookmark points to a single data dir (e.g. `~/.claude`)
+    /// instead of the home folder, so the UI can prompt re-selection.
+    @Published var needsMigration = false
+
     private func restoreBookmark() {
         guard let data = UserDefaults.standard.data(forKey: bookmarkKey) else { return }
 
@@ -92,6 +99,12 @@ class FolderAccessManager: ObservableObject {
                 saveBookmark(for: url)
             } else {
                 startAccessing(url: url)
+            }
+
+            // Flag legacy bookmarks that point directly to ~/.claude or ~/.codex
+            // so the app can prompt the user to re-select the home folder.
+            if Self.hiddenDataDirs.contains(url.lastPathComponent) {
+                needsMigration = true
             }
         } catch {
             hasAccess = false

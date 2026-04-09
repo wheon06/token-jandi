@@ -71,6 +71,24 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
             }
 
+            if viewModel.folderAccessManager?.needsMigration == true {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                        .font(.caption2)
+                    Text(L("settings.migrationHint"))
+                        .font(.caption2)
+                        .foregroundColor(.orange)
+                    Spacer()
+                    Button(L("settings.migrationAction")) {
+                        viewModel.folderAccessManager?.requestFolderAccess()
+                    }
+                    .font(.caption2)
+                    .buttonStyle(.plain)
+                    .foregroundColor(.accentColor)
+                }
+            }
+
             Divider()
 
             // Update (direct distribution only)

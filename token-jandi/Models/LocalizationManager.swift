@@ -92,6 +92,9 @@ class LocalizationManager: ObservableObject {
             "empty.message": "Select your home folder to start tracking.\nThe app will automatically find .claude and .codex data.",
             "folder.select": "Select",
             "folder.message": "Select your home folder. Token Jandi will automatically find Claude Code and Codex data.",
+            "folder.migrationMessage": "To track Codex usage too, please re-select your home folder (~/) instead of ~/.claude.",
+            "settings.migrationHint": "Re-select home folder to enable Codex tracking",
+            "settings.migrationAction": "Re-select",
             "settings.privacy": "Privacy Policy",
         ],
         "ko": [
@@ -143,6 +146,9 @@ class LocalizationManager: ObservableObject {
             "empty.message": "홈 폴더를 선택하면 자동으로\nClaude Code와 Codex 데이터를 찾습니다.",
             "folder.select": "선택",
             "folder.message": "홈 폴더를 선택해주세요. Token Jandi가 자동으로 Claude Code와 Codex 데이터를 찾습니다.",
+            "folder.migrationMessage": "Codex 사용량도 추적하려면 ~/.claude 대신 홈 폴더(~/)를 다시 선택해주세요.",
+            "settings.migrationHint": "Codex 추적을 위해 홈 폴더를 다시 선택하세요",
+            "settings.migrationAction": "다시 선택",
             "settings.privacy": "개인정보 처리방침",
         ],
     ]
