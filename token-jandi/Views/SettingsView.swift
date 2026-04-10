@@ -3,6 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var localization: LocalizationManager
     @ObservedObject var viewModel: HeatmapViewModel
+    @ObservedObject var usageService: AnthropicUsageService
+    @StateObject private var loginManager = OAuthLoginManager.shared
     #if !APP_STORE
     @StateObject private var updateChecker = UpdateChecker.shared
     #endif
@@ -10,9 +12,26 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Menu bar display mode
+            HStack {
+                Label(L("settings.displayMode"), systemImage: "menubar.rectangle")
+                    .font(.caption)
+                Spacer()
+                Picker("", selection: Binding(
+                    get: { viewModel.displayMode },
+                    set: { viewModel.displayMode = $0 }
+                )) {
+                    ForEach(MenuBarDisplayMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 140)
+            }
+
             // Menu bar usage toggle
             Toggle(isOn: $showMenuBarUsage) {
-                Label(L("settings.menuBarUsage"), systemImage: "menubar.rectangle")
+                Label(L("settings.menuBarUsage"), systemImage: "number")
                     .font(.caption)
             }
             .toggleStyle(.switch)
@@ -29,6 +48,96 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.menu)
                 .frame(width: 100)
+            }
+
+            Divider()
+
+            // Anthropic API Usage
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Label(L("usage.apiUsage"), systemImage: "chart.bar.xaxis")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                    Spacer()
+                }
+
+                if usageService.hasCredentials {
+                    // Logged in
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                        Text(L("usage.connected"))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button(action: {
+                            loginManager.logout()
+                        }) {
+                            Text(L("usage.logout"))
+                                .font(.caption2)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.red)
+                    }
+                } else {
+                    // Not logged in
+                    switch loginManager.state {
+                    case .idle:
+                        HStack {
+                            Text(L("usage.loginDescription"))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Button(action: { loginManager.startLogin() }) {
+                                Text(L("usage.login"))
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.green)
+                            .controlSize(.small)
+                        }
+                    case .loggingIn:
+                        HStack(spacing: 4) {
+                            ProgressView().scaleEffect(0.5).frame(width: 12, height: 12)
+                            Text(L("usage.loggingIn"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Button(action: { loginManager.cancelLogin() }) {
+                                Text(L("action.cancel"))
+                                    .font(.caption2)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    case .success:
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                                .font(.caption)
+                            Text(L("usage.loginSuccess"))
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+                    case .failed(let message):
+                        HStack(spacing: 4) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                                .font(.caption)
+                            Text(message)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                            Spacer()
+                            Button(action: { loginManager.startLogin() }) {
+                                Text(L("usage.retry"))
+                                    .font(.caption2)
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundColor(.accentColor)
+                        }
+                    }
+                }
             }
 
             Divider()

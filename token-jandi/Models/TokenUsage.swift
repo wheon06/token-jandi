@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum UsageProvider: String, CaseIterable, Hashable {
     case claude
@@ -132,6 +133,21 @@ func formatTokenCount(_ count: Int) -> String {
         return String(format: "%.1fK", Double(count) / 1_000)
     }
     return "\(count)"
+}
+
+func formatPercent(_ ratio: Double) -> String {
+    let pct = ratio * 100
+    if pct < 1 && pct > 0 { return "<1%" }
+    return "\(Int(pct))%"
+}
+
+func usageLevelColor(for ratio: Double) -> Color {
+    switch ratio {
+    case ..<0.5: return .green
+    case ..<0.8: return .yellow
+    case ..<0.95: return .orange
+    default: return .red
+    }
 }
 
 private func shortModelName(_ name: String) -> String {

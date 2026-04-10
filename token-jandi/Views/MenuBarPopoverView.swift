@@ -9,6 +9,7 @@ enum PopoverTab {
 struct MenuBarPopoverView: View {
     @ObservedObject var viewModel: HeatmapViewModel
     @ObservedObject var folderAccess: FolderAccessManager
+    @ObservedObject var usageService: AnthropicUsageService
     @ObservedObject var localization = LocalizationManager.shared
     @State private var currentTab: PopoverTab = .heatmap
 
@@ -31,7 +32,12 @@ struct MenuBarPopoverView: View {
                 Spacer()
 
                 if currentTab == .heatmap {
-                    Button(action: { viewModel.loadData() }) {
+                    Button(action: {
+                        viewModel.loadData()
+                        if usageService.hasCredentials {
+                            usageService.fetchUsage(force: true)
+                        }
+                    }) {
                         Image(systemName: "arrow.clockwise")
                             .foregroundColor(.secondary)
                     }
@@ -48,16 +54,124 @@ struct MenuBarPopoverView: View {
                 switch currentTab {
                 case .heatmap:
                     HeatmapContentView(viewModel: viewModel)
+                    if usageService.hasCredentials {
+                        Divider()
+                        ApiUsageBannerView(usageService: usageService)
+                    }
                 case .detail:
                     DetailContentView(viewModel: viewModel)
                 case .settings:
-                    SettingsView(localization: localization, viewModel: viewModel)
+                    SettingsView(localization: localization, viewModel: viewModel, usageService: usageService)
                 }
             }
         }
         .padding(16)
         .frame(width: 380)
         .id(localization.selectedLanguage)
+    }
+}
+
+// MARK: - API Usage Banner
+
+struct ApiUsageBannerView: View {
+    @ObservedObject var usageService: AnthropicUsageService
+
+    var body: some View {
+        let ratio = usageService.usageRatio
+        let color = usageLevelColor(for: ratio)
+        let weeklyRatio = usageService.weeklyUsageRatio
+        let weeklyColor = usageLevelColor(for: weeklyRatio)
+
+        VStack(spacing: 8) {
+            UsageBarRow(
+                label: L("usage.fiveHour"),
+                ratio: ratio,
+                color: color,
+                trailingText: usageService.resetTimeFormatted.map { "\(L("usage.resetsIn")) \($0)" }
+            )
+
+            UsageBarRow(
+                label: L("usage.sevenDay"),
+                ratio: weeklyRatio,
+                color: weeklyColor,
+                trailingText: nil
+            )
+
+            HStack {
+                if let data = usageService.usageData, data.isExtraUsageEnabled {
+                    Text("Max")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Color.purple)
+                        .cornerRadius(3)
+                }
+                Spacer()
+                switch usageService.fetchState {
+                case .loading:
+                    HStack(spacing: 2) {
+                        ProgressView().scaleEffect(0.4).frame(width: 10, height: 10)
+                        Text(L("usage.fetching")).font(.caption2).foregroundColor(.secondary)
+                    }
+                case .error(let msg):
+                    Text(msg).font(.caption2).foregroundColor(.red).lineLimit(1)
+                case .loaded:
+                    Text(L("usage.synced")).font(.caption2).foregroundColor(.secondary)
+                case .idle:
+                    EmptyView()
+                }
+            }
+        }
+        .padding(8)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(8)
+    }
+}
+
+struct UsageBarRow: View {
+    let label: String
+    let ratio: Double
+    let color: Color
+    let trailingText: String?
+
+    var body: some View {
+        VStack(spacing: 3) {
+            HStack {
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text(formatPercent(ratio))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundColor(color)
+            }
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 6)
+
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(color)
+                        .frame(
+                            width: geometry.size.width * min(ratio, 1.0),
+                            height: 6
+                        )
+                }
+            }
+            .frame(height: 6)
+
+            if let trailingText {
+                HStack {
+                    Spacer()
+                    Text(trailingText)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
     }
 }
 

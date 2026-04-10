@@ -23,6 +23,20 @@ enum RefreshInterval: Int, CaseIterable, Identifiable {
     }
 }
 
+enum MenuBarDisplayMode: String, CaseIterable, Identifiable {
+    case tokens = "tokens"
+    case percentage = "percentage"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .tokens: return L("settings.displayTokens")
+        case .percentage: return L("settings.displayPercentage")
+        }
+    }
+}
+
 class HeatmapViewModel: ObservableObject {
     @Published var cells: [DayCell] = []
     @Published var selectedCell: DayCell?
@@ -37,15 +51,57 @@ class HeatmapViewModel: ObservableObject {
         didSet { setupTimer() }
     }
 
+    @AppStorage("menuBarDisplayMode") private var menuBarDisplayModeRaw: String = MenuBarDisplayMode.tokens.rawValue
+
+    var displayMode: MenuBarDisplayMode {
+        get { MenuBarDisplayMode(rawValue: menuBarDisplayModeRaw) ?? .tokens }
+        set { menuBarDisplayModeRaw = newValue.rawValue }
+    }
+
+    private static let wakeNetworkDelay: TimeInterval = 5
+
     private let calendar = Calendar.current
     private let weeksToShow = 20
     private var timer: AnyCancellable?
+    private var wakeObserver: Any?
+    private var isLoadingData = false
     private var dailyUsage: [Date: DailyUsageData] = [:]
     var folderAccessManager: FolderAccessManager?
 
     init() {
         loadData()
         setupTimer()
+        observeSleepWake()
+    }
+
+    deinit {
+        if let observer = wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+        }
+    }
+
+    private func refresh() {
+        loadData()
+        let usageService = AnthropicUsageService.shared
+        if usageService.hasCredentials {
+            usageService.fetchUsage(force: true)
+        }
+    }
+
+    private func observeSleepWake() {
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.loadData()
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.wakeNetworkDelay) {
+                let usageService = AnthropicUsageService.shared
+                if usageService.hasCredentials {
+                    usageService.fetchUsage(force: true)
+                }
+            }
+        }
     }
 
     private func setupTimer() {
@@ -54,17 +110,29 @@ class HeatmapViewModel: ObservableObject {
         timer = Timer.publish(every: TimeInterval(refreshIntervalRaw), on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
-                self?.loadData()
+                self?.refresh()
             }
     }
 
     func loadData() {
-        // Use the selected root URL if available (sandbox), otherwise default to the user's home folder.
-        let parser = ClaudeLogParser(claudeDir: folderAccessManager?.claudeDirectoryURL)
+        guard !isLoadingData else { return }
+        isLoadingData = true
 
-        dailyUsage = parser.parseDailyUsage()
-        hasClaudeData = parser.hasAnyDataSource && dailyUsage.values.contains { $0.filtered(by: .all) != nil }
-        buildCells(from: dailyUsage)
+        let claudeDirURL = folderAccessManager?.claudeDirectoryURL
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let parser = ClaudeLogParser(claudeDir: claudeDirURL)
+            let hasDataSource = parser.hasAnyDataSource
+            let dailyUsage = parser.parseDailyUsage()
+
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.dailyUsage = dailyUsage
+                self.hasClaudeData = hasDataSource && dailyUsage.values.contains { $0.filtered(by: .all) != nil }
+                self.buildCells(from: dailyUsage)
+                self.isLoadingData = false
+            }
+        }
     }
 
     var todayUsage: TokenUsage? {
