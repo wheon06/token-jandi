@@ -1,3 +1,4 @@
+#if !APP_STORE
 import Foundation
 import SwiftUI
 import Combine
@@ -206,3 +207,4 @@ class UpdateChecker: ObservableObject {
         }
     }
 }
+#endif
