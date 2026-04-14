@@ -40,15 +40,3 @@
 "settings.version" = "Version";
 "settings.author" = "Author";
 "settings.source" = "Data source";
-"settings.update" = "Update";
-"settings.checkUpdate" = "Check for updates";
-"settings.updateAvailable" = "available";
-"update.checking" = "Checking...";
-"update.upToDate" = "Up to date";
-"update.checkFailed" = "Check failed";
-"update.noAsset" = "No download found";
-"update.downloadFailed" = "Download failed";
-"update.unzipFailed" = "Extract failed";
-"update.noApp" = "App not found";
-"update.installFailed" = "Install failed";
-"update.installing" = "Installing...";
