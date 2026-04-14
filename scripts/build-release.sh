@@ -2,7 +2,6 @@
 set -e
 
 APP_NAME="Token Jandi"
-VERSION="1.1.0"
 SCHEME="token-jandi"
 PROJECT="token-jandi.xcodeproj"
 SIGN_IDENTITY="Developer ID Application: HEEYEON LEE (8ZJ7CHXMW2)"
@@ -10,8 +9,9 @@ BUILD_DIR="build"
 ARCHIVE_PATH="${BUILD_DIR}/TokenJandi.xcarchive"
 EXPORT_PATH="${BUILD_DIR}/export"
 DIST_DIR="dist"
+BUNDLE_NAME="token-jandi"
 
-echo "=== Building ${APP_NAME} v${VERSION} ==="
+echo "=== Building ${APP_NAME} ==="
 
 # 1. Clean & Archive
 echo "→ Archiving..."
@@ -48,11 +48,13 @@ xcodebuild -exportArchive \
     -exportPath "${EXPORT_PATH}" \
     2>&1 | tail -3
 
-# 3. Notarize
+# 3. Resolve version from the exported app so release assets always match the bundle
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${EXPORT_PATH}/${BUNDLE_NAME}.app/Contents/Info.plist")
+
+# 4. Notarize
 echo "→ Notarizing..."
 rm -rf "${DIST_DIR}"
 mkdir -p "${DIST_DIR}"
-BUNDLE_NAME="token-jandi"
 cd "${EXPORT_PATH}"
 zip -r "../../${DIST_DIR}/Token.Jandi-${VERSION}.zip" "${BUNDLE_NAME}.app"
 cd ../..
@@ -61,11 +63,11 @@ xcrun notarytool submit "${DIST_DIR}/Token.Jandi-${VERSION}.zip" \
     --keychain-profile "AC_PASSWORD" \
     --wait
 
-# 4. Staple
+# 5. Staple
 echo "→ Stapling..."
 xcrun stapler staple "${EXPORT_PATH}/${BUNDLE_NAME}.app"
 
-# 5. Re-zip with stapled app
+# 6. Re-zip with stapled app
 rm "${DIST_DIR}/Token.Jandi-${VERSION}.zip"
 cd "${EXPORT_PATH}"
 zip -r "../../${DIST_DIR}/Token.Jandi-${VERSION}.zip" "${BUNDLE_NAME}.app"
