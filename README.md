@@ -21,12 +21,9 @@ Check your Claude Code and Codex token usage easily from the macOS status bar.
 
 ## Install
 
-### Homebrew CLI
+### Mac App Store
 
-```sh
-$ brew tap wheon06/tap
-$ brew install --cask token-jandi
-```
+[Download Token Jandi on the Mac App Store](https://apps.apple.com/kr/app/token-jandi/id6761585375?mt=12)
 
 ## License 
 `Token Jandi` is available under the MIT license. See the LICENSE file for more info.
