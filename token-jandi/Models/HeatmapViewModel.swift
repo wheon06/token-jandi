@@ -27,6 +27,7 @@ class HeatmapViewModel: ObservableObject {
     @Published var cells: [DayCell] = []
     @Published var selectedCell: DayCell?
     @Published var hasClaudeData = false
+    @Published var codexRateLimitStatus: CodexRateLimitStatus?
     @Published var selectedSource: UsageSourceFilter = .all {
         didSet {
             buildCells(from: dailyUsage)
@@ -63,6 +64,7 @@ class HeatmapViewModel: ObservableObject {
         let parser = ClaudeLogParser(claudeDir: folderAccessManager?.claudeDirectoryURL)
 
         dailyUsage = parser.parseDailyUsage()
+        codexRateLimitStatus = parser.parseCodexRateLimitStatus()
         hasClaudeData = parser.hasAnyDataSource && dailyUsage.values.contains { $0.filtered(by: .all) != nil }
         buildCells(from: dailyUsage)
     }

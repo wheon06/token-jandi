@@ -86,6 +86,18 @@ struct SettingsView: View {
                 }
             }
 
+            HStack(alignment: .top, spacing: 5) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 1)
+
+                Text(L("settings.localDataNotice"))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Divider()
 
             // Author

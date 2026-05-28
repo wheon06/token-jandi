@@ -10,6 +10,12 @@
 "stats.tokens" = "tokens";
 "stats.days" = "days";
 
+// MARK: - Codex Limits
+"codexLimit.title" = "Codex limits";
+"codexLimit.primary" = "5h limit";
+"codexLimit.secondary" = "7d limit";
+"codexLimit.resets" = "Resets";
+
 // MARK: - Heatmap
 "heatmap.less" = "Less";
 "heatmap.more" = "More";
@@ -40,3 +46,4 @@
 "settings.version" = "Version";
 "settings.author" = "Author";
 "settings.source" = "Data source";
+"settings.localDataNotice" = "Usage is based only on local files from this Mac, so multi-device account usage may be incomplete.";

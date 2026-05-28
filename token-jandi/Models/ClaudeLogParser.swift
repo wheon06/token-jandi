@@ -32,6 +32,42 @@ struct ClaudeLogParser {
         return result
     }
 
+    func parseCodexRateLimitStatus() -> CodexRateLimitStatus? {
+        guard let enumerator = FileManager.default.enumerator(
+            at: codexSessionsDirURL,
+            includingPropertiesForKeys: nil
+        ) else { return nil }
+
+        var latestStatus: CodexRateLimitStatus?
+
+        for case let fileURL as URL in enumerator where fileURL.pathExtension == "jsonl" {
+            guard let data = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }
+
+            for line in data.split(separator: "\n") where !line.isEmpty {
+                guard let json = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
+                      let timestampString = json["timestamp"] as? String,
+                      let timestamp = parseISO8601(timestampString),
+                      let payload = json["payload"] as? [String: Any],
+                      payload["type"] as? String == "token_count",
+                      let rateLimits = payload["rate_limits"] as? [String: Any] else { continue }
+
+                let status = CodexRateLimitStatus(
+                    capturedAt: timestamp,
+                    planType: rateLimits["plan_type"] as? String,
+                    primary: parseCodexRateLimitWindow(rateLimits["primary"]),
+                    secondary: parseCodexRateLimitWindow(rateLimits["secondary"]),
+                    rateLimitReachedType: rateLimits["rate_limit_reached_type"] as? String
+                )
+
+                if latestStatus == nil || status.capturedAt > latestStatus!.capturedAt {
+                    latestStatus = status
+                }
+            }
+        }
+
+        return latestStatus
+    }
+
     // MARK: - Claude Code parsing
 
     private var hasClaudeProjectData: Bool {
@@ -179,9 +215,10 @@ struct ClaudeLogParser {
                 case "token_count":
                     guard let turnID = activeTurnID,
                           let info = payload["info"] as? [String: Any],
-                          let lastUsage = info["last_token_usage"] as? [String: Any],
+                          let tokenUsage = (info["total_token_usage"] as? [String: Any])
+                              ?? (info["last_token_usage"] as? [String: Any]),
                           let date = parseISO8601(timestamp),
-                          let usage = parseCodexTurnUsage(lastUsage, timestamp: date, model: currentModel),
+                          let usage = parseCodexTurnUsage(tokenUsage, timestamp: date, model: currentModel),
                           usage.totalTokens > 0 else { continue }
 
                     latestUsageByTurn[turnID] = usage
@@ -272,10 +309,9 @@ struct ClaudeLogParser {
         timestamp: Date,
         model: String
     ) -> CodexTurnUsage? {
-        let inputTokens = usage["input_tokens"] as? Int ?? 0
-        let outputTokens = usage["output_tokens"] as? Int ?? 0
-        let reasoningTokens = usage["reasoning_output_tokens"] as? Int ?? 0
-        let totalTokens = usage["total_tokens"] as? Int ?? (inputTokens + outputTokens + reasoningTokens)
+        let inputTokens = intValue(usage["input_tokens"]) ?? 0
+        let outputTokens = intValue(usage["output_tokens"]) ?? 0
+        let totalTokens = intValue(usage["total_tokens"]) ?? (inputTokens + outputTokens)
 
         guard totalTokens > 0 else { return nil }
 
@@ -283,9 +319,48 @@ struct ClaudeLogParser {
             timestamp: timestamp,
             model: model,
             inputTokens: inputTokens,
-            outputTokens: outputTokens + reasoningTokens,
+            outputTokens: max(totalTokens - inputTokens, 0),
             totalTokens: totalTokens
         )
+    }
+
+    private func parseCodexRateLimitWindow(_ value: Any?) -> CodexRateLimitWindow? {
+        guard let dictionary = value as? [String: Any],
+              let usedPercent = doubleValue(dictionary["used_percent"]),
+              let windowMinutes = intValue(dictionary["window_minutes"]),
+              let resetsAtTimestamp = doubleValue(dictionary["resets_at"]) else { return nil }
+
+        return CodexRateLimitWindow(
+            usedPercent: usedPercent,
+            windowMinutes: windowMinutes,
+            resetsAt: Date(timeIntervalSince1970: resetsAtTimestamp)
+        )
+    }
+
+    private func intValue(_ value: Any?) -> Int? {
+        if let int = value as? Int {
+            return int
+        }
+        if let double = value as? Double {
+            return Int(double)
+        }
+        if let number = value as? NSNumber {
+            return number.intValue
+        }
+        return nil
+    }
+
+    private func doubleValue(_ value: Any?) -> Double? {
+        if let double = value as? Double {
+            return double
+        }
+        if let int = value as? Int {
+            return Double(int)
+        }
+        if let number = value as? NSNumber {
+            return number.doubleValue
+        }
+        return nil
     }
 
     private func parseISO8601(_ string: String) -> Date? {
@@ -301,6 +376,24 @@ private struct CodexTurnUsage {
     let inputTokens: Int
     let outputTokens: Int
     let totalTokens: Int
+}
+
+struct CodexRateLimitStatus {
+    let capturedAt: Date
+    let planType: String?
+    let primary: CodexRateLimitWindow?
+    let secondary: CodexRateLimitWindow?
+    let rateLimitReachedType: String?
+
+    var hasLimits: Bool {
+        primary != nil || secondary != nil
+    }
+}
+
+struct CodexRateLimitWindow {
+    let usedPercent: Double
+    let windowMinutes: Int
+    let resetsAt: Date
 }
 
 /// Aggregated daily usage from all sources

@@ -1,6 +1,6 @@
 # Privacy Policy — Token Jandi
 
-**Last updated:** April 3, 2026
+**Last updated:** May 29, 2026
 
 ## Overview
 
@@ -23,6 +23,10 @@ The app reads the following local files (with your permission):
 - `~/.codex/sessions/**/*.jsonl` — Codex session logs containing per-turn token usage
 
 This data never leaves your device.
+
+## Data Accuracy Limitation
+
+Token Jandi calculates usage only from local Claude Code and Codex files available on the current Mac. If the same account is used on multiple devices, usage generated on other devices may be missing from Token Jandi.
 
 ## Permissions
 

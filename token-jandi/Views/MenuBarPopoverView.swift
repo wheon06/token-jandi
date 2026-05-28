@@ -111,6 +111,10 @@ struct HeatmapContentView: View {
                 )
             }
 
+            if let status = viewModel.codexRateLimitStatus, status.hasLimits {
+                CodexRateLimitsView(status: status)
+            }
+
             Divider()
 
             GrassHeatmapView(viewModel: viewModel)
@@ -120,6 +124,113 @@ struct HeatmapContentView: View {
                 SimpleDetailView(cell: selected, selectedSource: viewModel.selectedSource)
             }
         }
+    }
+}
+
+struct CodexRateLimitsView: View {
+    let status: CodexRateLimitStatus
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 6) {
+                Label(L("codexLimit.title"), systemImage: "speedometer")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                if let planType = status.planType, !planType.isEmpty {
+                    Text(planType.capitalized)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.green)
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 6)
+                        .background(Capsule().fill(Color.green.opacity(0.12)))
+                }
+            }
+
+            HStack(spacing: 8) {
+                if let primary = status.primary {
+                    CodexLimitWindowCard(title: L("codexLimit.primary"), window: primary)
+                }
+
+                if let secondary = status.secondary {
+                    CodexLimitWindowCard(title: L("codexLimit.secondary"), window: secondary)
+                }
+            }
+        }
+    }
+}
+
+struct CodexLimitWindowCard: View {
+    let title: String
+    let window: CodexRateLimitWindow
+
+    private var fraction: CGFloat {
+        CGFloat(min(max(window.usedPercent / 100, 0), 1))
+    }
+
+    private var tint: Color {
+        if window.usedPercent >= 90 {
+            return .red
+        }
+        if window.usedPercent >= 70 {
+            return .orange
+        }
+        return .green
+    }
+
+    private var percentText: String {
+        if window.usedPercent.rounded() == window.usedPercent {
+            return "\(Int(window.usedPercent))%"
+        }
+        return String(format: "%.1f%%", window.usedPercent)
+    }
+
+    private var resetText: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        formatter.setLocalizedDateFormatFromTemplate("M d HH:mm")
+        return "\(L("codexLimit.resets")) \(formatter.string(from: window.resetsAt))"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                Text(percentText)
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundColor(tint)
+                    .monospacedDigit()
+            }
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color(nsColor: .separatorColor).opacity(0.25))
+
+                    Capsule()
+                        .fill(tint)
+                        .frame(width: max(4, proxy.size.width * fraction))
+                }
+            }
+            .frame(height: 6)
+
+            Text(resetText)
+                .font(.system(size: 9))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(8)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(8)
     }
 }
 
@@ -305,7 +416,7 @@ struct EmptyStateView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: "leaf.trianglebadge.exclamationmark")
+            Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 32))
                 .foregroundColor(.secondary)
             Text(L("empty.title"))
