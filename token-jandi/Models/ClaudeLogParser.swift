@@ -22,6 +22,24 @@ struct ClaudeLogParser {
         hasClaudeProjectData || hasCodexSessionData
     }
 
+    func dataDirectoryURL(for provider: UsageProvider) -> URL {
+        switch provider {
+        case .claude:
+            return claudeDirURL
+        case .codex:
+            return codexDirURL
+        }
+    }
+
+    func hasLogDirectory(for provider: UsageProvider) -> Bool {
+        switch provider {
+        case .claude:
+            return hasClaudeProjectData
+        case .codex:
+            return hasCodexSessionData
+        }
+    }
+
     func parseDailyUsage() -> [Date: DailyUsageData] {
         var result: [Date: DailyUsageData] = [:]
         let calendar = Calendar.current

@@ -36,6 +36,26 @@ enum UsageSourceFilter: String, CaseIterable, Identifiable {
     }
 }
 
+enum MenuBarDisplayMode: String, CaseIterable, Identifiable {
+    case today
+    case thisWeek
+    case claudeToday
+    case codexToday
+    case iconOnly
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .today: return L("menuBar.today")
+        case .thisWeek: return L("menuBar.thisWeek")
+        case .claudeToday: return L("menuBar.claudeToday")
+        case .codexToday: return L("menuBar.codexToday")
+        case .iconOnly: return L("menuBar.iconOnly")
+        }
+    }
+}
+
 struct UsageTotals {
     var messageCount: Int = 0
     var inputTokens: Int = 0
@@ -134,7 +154,7 @@ func formatTokenCount(_ count: Int) -> String {
     return "\(count)"
 }
 
-private func shortModelName(_ name: String) -> String {
+func shortModelName(_ name: String) -> String {
     if name.contains("opus") { return "Opus" }
     if name.contains("sonnet") { return "Sonnet" }
     if name.contains("haiku") { return "Haiku" }

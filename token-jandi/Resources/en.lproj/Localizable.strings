@@ -38,10 +38,22 @@
 
 // MARK: - Actions
 "action.refresh" = "Refresh data";
+"action.refreshing" = "Refreshing data";
 "action.quit" = "Quit";
 
+// MARK: - Loading
+"loading.title" = "Checking data";
+"loading.message" = "Checking Claude and Codex logs.";
+
+// MARK: - Menu Bar
+"menuBar.today" = "Today";
+"menuBar.thisWeek" = "This week";
+"menuBar.claudeToday" = "Claude today";
+"menuBar.codexToday" = "Codex today";
+"menuBar.iconOnly" = "Icon only";
+
 // MARK: - Settings
-"settings.menuBarUsage" = "Show today's usage in menu bar";
+"settings.menuBarUsage" = "Menu bar display";
 "settings.language" = "Language";
 "settings.version" = "Version";
 "settings.author" = "Author";

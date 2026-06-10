@@ -38,10 +38,22 @@
 
 // MARK: - Actions
 "action.refresh" = "데이터 새로고침";
+"action.refreshing" = "새로고침 중";
 "action.quit" = "종료";
 
+// MARK: - Loading
+"loading.title" = "데이터 확인 중";
+"loading.message" = "Claude와 Codex 로그를 확인하고 있습니다.";
+
+// MARK: - Menu Bar
+"menuBar.today" = "오늘";
+"menuBar.thisWeek" = "이번 주";
+"menuBar.claudeToday" = "Claude 오늘";
+"menuBar.codexToday" = "Codex 오늘";
+"menuBar.iconOnly" = "아이콘만";
+
 // MARK: - Settings
-"settings.menuBarUsage" = "메뉴바에 오늘 사용량 표시";
+"settings.menuBarUsage" = "메뉴바 표시";
 "settings.language" = "언어";
 "settings.version" = "버전";
 "settings.author" = "제작자";

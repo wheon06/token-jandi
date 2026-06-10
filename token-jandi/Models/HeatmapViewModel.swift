@@ -28,6 +28,7 @@ class HeatmapViewModel: ObservableObject {
     @Published var selectedCell: DayCell?
     @Published var hasClaudeData = false
     @Published var codexRateLimitStatus: CodexRateLimitStatus?
+    @Published private(set) var isRefreshing = false
     @Published var selectedSource: UsageSourceFilter = .all {
         didSet {
             buildCells(from: dailyUsage)
@@ -42,11 +43,16 @@ class HeatmapViewModel: ObservableObject {
     private let weeksToShow = 20
     private var timer: AnyCancellable?
     private var dailyUsage: [Date: DailyUsageData] = [:]
+    private var refreshRequestID = 0
     var folderAccessManager: FolderAccessManager?
 
     init() {
         loadData()
         setupTimer()
+    }
+
+    var isLoadingWithoutData: Bool {
+        isRefreshing && !hasClaudeData
     }
 
     private func setupTimer() {
@@ -59,14 +65,35 @@ class HeatmapViewModel: ObservableObject {
             }
     }
 
-    func loadData() {
-        // Use the selected root URL if available (sandbox), otherwise default to the user's home folder.
-        let parser = ClaudeLogParser(claudeDir: folderAccessManager?.claudeDirectoryURL)
+    func loadData(force: Bool = false) {
+        if isRefreshing && !force {
+            return
+        }
 
-        dailyUsage = parser.parseDailyUsage()
-        codexRateLimitStatus = parser.parseCodexRateLimitStatus()
-        hasClaudeData = parser.hasAnyDataSource && dailyUsage.values.contains { $0.filtered(by: .all) != nil }
-        buildCells(from: dailyUsage)
+        // Use the selected root URL if available (sandbox), otherwise default to the user's home folder.
+        let dataRootURL = folderAccessManager?.claudeDirectoryURL
+        refreshRequestID += 1
+        let requestID = refreshRequestID
+
+        isRefreshing = true
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let parser = ClaudeLogParser(claudeDir: dataRootURL)
+            let parsedDailyUsage = parser.parseDailyUsage()
+            let parsedHasClaudeData = parser.hasAnyDataSource
+                && parsedDailyUsage.values.contains { $0.filtered(by: .all) != nil }
+            let parsedCodexRateLimitStatus = parser.parseCodexRateLimitStatus()
+
+            DispatchQueue.main.async {
+                guard let self, self.refreshRequestID == requestID else { return }
+
+                self.dailyUsage = parsedDailyUsage
+                self.codexRateLimitStatus = parsedCodexRateLimitStatus
+                self.hasClaudeData = parsedHasClaudeData
+                self.buildCells(from: parsedDailyUsage)
+                self.isRefreshing = false
+            }
+        }
     }
 
     var todayUsage: TokenUsage? {
@@ -89,6 +116,10 @@ class HeatmapViewModel: ObservableObject {
             }
         }
         return streak
+    }
+
+    func todayTokens(for filter: UsageSourceFilter) -> Int {
+        todayTokens(in: dailyUsage, filter: filter)
     }
 
     var weeklyTokens: Int {
@@ -198,5 +229,10 @@ class HeatmapViewModel: ObservableObject {
     private func usage(for date: Date, filter: UsageSourceFilter) -> TokenUsage? {
         let day = calendar.startOfDay(for: date)
         return dailyUsage[day]?.filtered(by: filter)
+    }
+
+    private func todayTokens(in dailyUsage: [Date: DailyUsageData], filter: UsageSourceFilter) -> Int {
+        let day = calendar.startOfDay(for: Date())
+        return dailyUsage[day]?.filtered(by: filter)?.totalTokens ?? 0
     }
 }

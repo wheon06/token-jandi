@@ -4,15 +4,23 @@ struct SettingsView: View {
     @ObservedObject var localization: LocalizationManager
     @ObservedObject var viewModel: HeatmapViewModel
     @AppStorage("showMenuBarUsage") private var showMenuBarUsage = true
+    @AppStorage("menuBarDisplayMode") private var menuBarDisplayModeRaw = MenuBarDisplayMode.today.rawValue
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Menu bar usage toggle
-            Toggle(isOn: $showMenuBarUsage) {
+            // Menu bar display mode
+            HStack {
                 Label(L("settings.menuBarUsage"), systemImage: "menubar.rectangle")
                     .font(.caption)
+                Spacer()
+                Picker("", selection: menuBarDisplayModeBinding) {
+                    ForEach(MenuBarDisplayMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 150)
             }
-            .toggleStyle(.switch)
 
             // Auto refresh interval
             HStack {
@@ -150,5 +158,21 @@ struct SettingsView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private var menuBarDisplayModeBinding: Binding<MenuBarDisplayMode> {
+        Binding(
+            get: {
+                if !showMenuBarUsage {
+                    return .iconOnly
+                }
+
+                return MenuBarDisplayMode(rawValue: menuBarDisplayModeRaw) ?? .today
+            },
+            set: { mode in
+                showMenuBarUsage = mode != .iconOnly
+                menuBarDisplayModeRaw = mode.rawValue
+            }
+        )
     }
 }

@@ -32,17 +32,30 @@ struct MenuBarPopoverView: View {
 
                 if currentTab == .heatmap {
                     Button(action: { viewModel.loadData() }) {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(.secondary)
+                        ZStack {
+                            Image(systemName: "arrow.clockwise")
+                                .opacity(viewModel.isRefreshing ? 0 : 1)
+
+                            if viewModel.isRefreshing {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .scaleEffect(0.55)
+                            }
+                        }
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
-                    .help(L("action.refresh"))
+                    .disabled(viewModel.isRefreshing)
+                    .help(viewModel.isRefreshing ? L("action.refreshing") : L("action.refresh"))
                 }
             }
 
             Divider()
 
-            if !viewModel.hasClaudeData && currentTab != .settings {
+            if viewModel.isLoadingWithoutData && currentTab != .settings {
+                LoadingStateView()
+            } else if !viewModel.hasClaudeData && currentTab != .settings {
                 EmptyStateView(folderAccess: folderAccess)
             } else {
                 switch currentTab {
@@ -409,7 +422,29 @@ struct BarChartView: View {
     }
 }
 
-// MARK: - Empty State
+// MARK: - Loading and Empty States
+
+struct LoadingStateView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .controlSize(.small)
+
+            VStack(spacing: 4) {
+                Text(L("loading.title"))
+                    .font(.caption)
+                    .fontWeight(.medium)
+
+                Text(L("loading.message"))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(.vertical, 18)
+        .frame(maxWidth: .infinity, minHeight: 180)
+    }
+}
 
 struct EmptyStateView: View {
     @ObservedObject var folderAccess: FolderAccessManager
