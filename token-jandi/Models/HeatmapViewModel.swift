@@ -28,6 +28,7 @@ class HeatmapViewModel: ObservableObject {
     @Published var selectedCell: DayCell?
     @Published var hasClaudeData = false
     @Published var codexRateLimitStatus: CodexRateLimitStatus?
+    @Published private(set) var summaryStats = UsageSummaryStats()
     @Published private(set) var isRefreshing = false
     @Published var selectedSource: UsageSourceFilter = .all {
         didSet {
@@ -43,6 +44,8 @@ class HeatmapViewModel: ObservableObject {
     private let weeksToShow = 20
     private var timer: AnyCancellable?
     private var dailyUsage: [Date: DailyUsageData] = [:]
+    private var lastLogSignature: LogDirectorySignature?
+    private var lastRefreshDay: Date?
     private var refreshRequestID = 0
     var folderAccessManager: FolderAccessManager?
 
@@ -72,25 +75,42 @@ class HeatmapViewModel: ObservableObject {
 
         // Use the selected root URL if available (sandbox), otherwise default to the user's home folder.
         let dataRootURL = folderAccessManager?.claudeDirectoryURL
+        let previousLogSignature = lastLogSignature
+        let refreshDay = calendar.startOfDay(for: Date())
+        let previousRefreshDay = lastRefreshDay
         refreshRequestID += 1
         let requestID = refreshRequestID
 
         isRefreshing = true
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             let parser = ClaudeLogParser(claudeDir: dataRootURL)
-            let parsedDailyUsage = parser.parseDailyUsage()
+            let currentLogSignature = parser.logSignature()
+
+            if !force,
+               let previousLogSignature,
+               currentLogSignature == previousLogSignature,
+               previousRefreshDay == refreshDay {
+                DispatchQueue.main.async {
+                    guard let self, self.refreshRequestID == requestID else { return }
+                    self.isRefreshing = false
+                }
+                return
+            }
+
+            let parsedReport = parser.parseUsageReport()
             let parsedHasClaudeData = parser.hasAnyDataSource
-                && parsedDailyUsage.values.contains { $0.filtered(by: .all) != nil }
-            let parsedCodexRateLimitStatus = parser.parseCodexRateLimitStatus()
+                && parsedReport.dailyUsage.values.contains { $0.filtered(by: .all) != nil }
 
             DispatchQueue.main.async {
                 guard let self, self.refreshRequestID == requestID else { return }
 
-                self.dailyUsage = parsedDailyUsage
-                self.codexRateLimitStatus = parsedCodexRateLimitStatus
+                self.dailyUsage = parsedReport.dailyUsage
+                self.codexRateLimitStatus = parsedReport.codexRateLimitStatus
                 self.hasClaudeData = parsedHasClaudeData
-                self.buildCells(from: parsedDailyUsage)
+                self.lastLogSignature = currentLogSignature
+                self.lastRefreshDay = refreshDay
+                self.buildCells(from: parsedReport.dailyUsage)
                 self.isRefreshing = false
             }
         }
@@ -122,16 +142,16 @@ class HeatmapViewModel: ObservableObject {
         todayTokens(in: dailyUsage, filter: filter)
     }
 
+    func weeklyTokenTotal(for filter: UsageSourceFilter) -> Int {
+        weeklyTokenTotal(in: dailyUsage, filter: filter)
+    }
+
     var weeklyTokens: Int {
-        let oneWeekAgo = calendar.date(byAdding: .day, value: -7, to: Date())!
-        return cells
-            .filter { $0.date >= oneWeekAgo }
-            .compactMap { $0.usage?.totalTokens }
-            .reduce(0, +)
+        summaryStats.weeklyTokens
     }
 
     var totalTokens: Int {
-        cells.compactMap { $0.usage?.totalTokens }.reduce(0, +)
+        summaryStats.totalTokens
     }
 
     /// Recent 14 days with usage for daily chart
@@ -220,10 +240,29 @@ class HeatmapViewModel: ObservableObject {
         }
 
         cells = rebuiltCells
+        summaryStats = buildSummaryStats(from: rebuiltCells, dailyUsage: dailyUsage)
 
         if let selectedDate {
             selectedCell = rebuiltCells.first(where: { calendar.isDate($0.date, inSameDayAs: selectedDate) })
         }
+    }
+
+    private func buildSummaryStats(
+        from cells: [DayCell],
+        dailyUsage: [Date: DailyUsageData]
+    ) -> UsageSummaryStats {
+        let today = calendar.startOfDay(for: Date())
+        let todayTokens = dailyUsage[today]?.filtered(by: selectedSource)?.totalTokens ?? 0
+        let weeklyTokens = weeklyTokenTotal(in: dailyUsage, filter: selectedSource)
+        let totalTokens = cells
+            .compactMap { $0.usage?.totalTokens }
+            .reduce(0, +)
+
+        return UsageSummaryStats(
+            todayTokens: todayTokens,
+            weeklyTokens: weeklyTokens,
+            totalTokens: totalTokens
+        )
     }
 
     private func usage(for date: Date, filter: UsageSourceFilter) -> TokenUsage? {
@@ -235,4 +274,23 @@ class HeatmapViewModel: ObservableObject {
         let day = calendar.startOfDay(for: Date())
         return dailyUsage[day]?.filtered(by: filter)?.totalTokens ?? 0
     }
+
+    private func weeklyTokenTotal(
+        in dailyUsage: [Date: DailyUsageData],
+        filter: UsageSourceFilter
+    ) -> Int {
+        let today = calendar.startOfDay(for: Date())
+        let weekStart = calendar.date(byAdding: .day, value: -6, to: today) ?? today
+
+        return dailyUsage
+            .filter { date, _ in date >= weekStart && date <= today }
+            .compactMap { _, usage in usage.filtered(by: filter)?.totalTokens }
+            .reduce(0, +)
+    }
+}
+
+struct UsageSummaryStats {
+    var todayTokens: Int = 0
+    var weeklyTokens: Int = 0
+    var totalTokens: Int = 0
 }

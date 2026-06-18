@@ -3,9 +3,16 @@ import Foundation
 /// Parses local Claude Code and Codex logs for daily token usage data.
 struct ClaudeLogParser {
     let dataRootURL: URL
+    private let fractionalISO8601Formatter: ISO8601DateFormatter
+    private let standardISO8601Formatter: ISO8601DateFormatter
 
     init(claudeDir: URL? = nil) {
         self.dataRootURL = claudeDir ?? FileManager.default.homeDirectoryForCurrentUser
+
+        let fractionalFormatter = ISO8601DateFormatter()
+        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        self.fractionalISO8601Formatter = fractionalFormatter
+        self.standardISO8601Formatter = ISO8601DateFormatter()
     }
 
     // MARK: - Public
@@ -41,49 +48,39 @@ struct ClaudeLogParser {
     }
 
     func parseDailyUsage() -> [Date: DailyUsageData] {
+        parseUsageReport().dailyUsage
+    }
+
+    func parseUsageReport() -> UsageParseReport {
         var result: [Date: DailyUsageData] = [:]
         let calendar = Calendar.current
 
         merge(parseClaudeUsage(calendar: calendar), into: &result)
-        merge(parseCodexUsage(calendar: calendar), into: &result)
+        let codexResult = parseCodexUsage(calendar: calendar)
+        merge(codexResult.dailyUsage, into: &result)
 
-        return result
+        return UsageParseReport(
+            dailyUsage: result,
+            codexRateLimitStatus: codexResult.latestRateLimitStatus
+        )
     }
 
     func parseCodexRateLimitStatus() -> CodexRateLimitStatus? {
-        guard let enumerator = FileManager.default.enumerator(
-            at: codexSessionsDirURL,
-            includingPropertiesForKeys: nil
-        ) else { return nil }
+        parseCodexUsage(calendar: Calendar.current).latestRateLimitStatus
+    }
 
-        var latestStatus: CodexRateLimitStatus?
-
-        for case let fileURL as URL in enumerator where fileURL.pathExtension == "jsonl" {
-            guard let data = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }
-
-            for line in data.split(separator: "\n") where !line.isEmpty {
-                guard let json = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
-                      let timestampString = json["timestamp"] as? String,
-                      let timestamp = parseISO8601(timestampString),
-                      let payload = json["payload"] as? [String: Any],
-                      payload["type"] as? String == "token_count",
-                      let rateLimits = payload["rate_limits"] as? [String: Any] else { continue }
-
-                let status = CodexRateLimitStatus(
-                    capturedAt: timestamp,
-                    planType: rateLimits["plan_type"] as? String,
-                    primary: parseCodexRateLimitWindow(rateLimits["primary"]),
-                    secondary: parseCodexRateLimitWindow(rateLimits["secondary"]),
-                    rateLimitReachedType: rateLimits["rate_limit_reached_type"] as? String
-                )
-
-                if latestStatus == nil || status.capturedAt > latestStatus!.capturedAt {
-                    latestStatus = status
-                }
-            }
+    func logSignature() -> LogDirectorySignature {
+        let fingerprints = [
+            fileFingerprints(in: claudeProjectsDirURL, recursive: false),
+            fileFingerprint(for: claudeDirURL.appendingPathComponent("history.jsonl")).map { [$0] } ?? [],
+            fileFingerprints(in: codexSessionsDirURL, recursive: true)
+        ]
+        .flatMap { $0 }
+        .sorted { lhs, rhs in
+            lhs.path < rhs.path
         }
 
-        return latestStatus
+        return LogDirectorySignature(files: fingerprints)
     }
 
     // MARK: - Claude Code parsing
@@ -109,7 +106,9 @@ struct ClaudeLogParser {
             ))?.filter { $0.pathExtension == "jsonl" } ?? []
 
             for file in jsonlFiles {
-                parseClaudeSessionFile(file, into: &result, calendar: calendar)
+                autoreleasepool {
+                    parseClaudeSessionFile(file, into: &result, calendar: calendar)
+                }
             }
         }
 
@@ -186,8 +185,8 @@ struct ClaudeLogParser {
         codexDirURL.appendingPathComponent("sessions")
     }
 
-    private func parseCodexUsage(calendar: Calendar) -> [Date: DailyUsageData] {
-        var result: [Date: DailyUsageData] = [:]
+    private func parseCodexUsage(calendar: Calendar) -> CodexParseResult {
+        var result = CodexParseResult()
 
         guard let enumerator = FileManager.default.enumerator(
             at: codexSessionsDirURL,
@@ -195,7 +194,9 @@ struct ClaudeLogParser {
         ) else { return result }
 
         for case let fileURL as URL in enumerator where fileURL.pathExtension == "jsonl" {
-            parseCodexSessionFile(fileURL, into: &result, calendar: calendar)
+            autoreleasepool {
+                parseCodexSessionFile(fileURL, into: &result, calendar: calendar)
+            }
         }
 
         return result
@@ -203,7 +204,7 @@ struct ClaudeLogParser {
 
     private func parseCodexSessionFile(
         _ fileURL: URL,
-        into result: inout [Date: DailyUsageData],
+        into result: inout CodexParseResult,
         calendar: Calendar
     ) {
         guard let data = try? String(contentsOf: fileURL, encoding: .utf8) else { return }
@@ -231,11 +232,27 @@ struct ClaudeLogParser {
                     activeTurnID = payload["turn_id"] as? String
 
                 case "token_count":
+                    guard let date = parseISO8601(timestamp) else { continue }
+
+                    if let rateLimits = payload["rate_limits"] as? [String: Any] {
+                        let status = CodexRateLimitStatus(
+                            capturedAt: date,
+                            planType: rateLimits["plan_type"] as? String,
+                            primary: parseCodexRateLimitWindow(rateLimits["primary"]),
+                            secondary: parseCodexRateLimitWindow(rateLimits["secondary"]),
+                            rateLimitReachedType: rateLimits["rate_limit_reached_type"] as? String
+                        )
+
+                        if result.latestRateLimitStatus == nil
+                            || status.capturedAt > result.latestRateLimitStatus!.capturedAt {
+                            result.latestRateLimitStatus = status
+                        }
+                    }
+
                     guard let turnID = activeTurnID,
                           let info = payload["info"] as? [String: Any],
                           let tokenUsage = (info["total_token_usage"] as? [String: Any])
                               ?? (info["last_token_usage"] as? [String: Any]),
-                          let date = parseISO8601(timestamp),
                           let usage = parseCodexTurnUsage(tokenUsage, timestamp: date, model: currentModel),
                           usage.totalTokens > 0 else { continue }
 
@@ -253,7 +270,7 @@ struct ClaudeLogParser {
         for usage in latestUsageByTurn.values {
             let day = calendar.startOfDay(for: usage.timestamp)
             addUsage(
-                to: &result,
+                to: &result.dailyUsage,
                 date: day,
                 source: .codex,
                 messageCount: 1,
@@ -382,10 +399,73 @@ struct ClaudeLogParser {
     }
 
     private func parseISO8601(_ string: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: string) ?? ISO8601DateFormatter().date(from: string)
+        fractionalISO8601Formatter.date(from: string) ?? standardISO8601Formatter.date(from: string)
     }
+
+    private func fileFingerprints(in directoryURL: URL, recursive: Bool) -> [LogFileFingerprint] {
+        let resourceKeys: [URLResourceKey] = [.contentModificationDateKey, .fileSizeKey]
+
+        if recursive {
+            guard let enumerator = FileManager.default.enumerator(
+                at: directoryURL,
+                includingPropertiesForKeys: resourceKeys
+            ) else { return [] }
+
+            return enumerator.compactMap { item in
+                guard let fileURL = item as? URL, fileURL.pathExtension == "jsonl" else { return nil }
+                return fileFingerprint(for: fileURL)
+            }
+        }
+
+        guard let projectDirs = try? FileManager.default.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: nil
+        ) else { return [] }
+
+        return projectDirs.flatMap { projectDir in
+            (try? FileManager.default.contentsOfDirectory(
+                at: projectDir,
+                includingPropertiesForKeys: resourceKeys
+            ))?
+            .compactMap { fileURL in
+                guard fileURL.pathExtension == "jsonl" else { return nil }
+                return fileFingerprint(for: fileURL)
+            } ?? []
+        }
+    }
+
+    private func fileFingerprint(for fileURL: URL) -> LogFileFingerprint? {
+        guard let resourceValues = try? fileURL.resourceValues(forKeys: [
+            .contentModificationDateKey,
+            .fileSizeKey
+        ]) else { return nil }
+
+        return LogFileFingerprint(
+            path: fileURL.path,
+            modificationTime: resourceValues.contentModificationDate?.timeIntervalSince1970 ?? 0,
+            fileSize: Int64(resourceValues.fileSize ?? 0)
+        )
+    }
+}
+
+struct UsageParseReport {
+    let dailyUsage: [Date: DailyUsageData]
+    let codexRateLimitStatus: CodexRateLimitStatus?
+}
+
+nonisolated struct LogDirectorySignature: Equatable {
+    let files: [LogFileFingerprint]
+}
+
+nonisolated struct LogFileFingerprint: Equatable {
+    let path: String
+    let modificationTime: TimeInterval
+    let fileSize: Int64
+}
+
+private struct CodexParseResult {
+    var dailyUsage: [Date: DailyUsageData] = [:]
+    var latestRateLimitStatus: CodexRateLimitStatus?
 }
 
 private struct CodexTurnUsage {
@@ -473,7 +553,18 @@ struct DailyUsageData {
     }
 
     func filtered(by filter: UsageSourceFilter) -> TokenUsage? {
-        let selectedTotals = filter.provider.flatMap { sourceBreakdown[$0] } ?? totals
+        let selectedTotals: UsageTotals
+        switch filter {
+        case .all:
+            selectedTotals = totals
+        case .claude:
+            guard let claudeTotals = sourceBreakdown[.claude] else { return nil }
+            selectedTotals = claudeTotals
+        case .codex:
+            guard let codexTotals = sourceBreakdown[.codex] else { return nil }
+            selectedTotals = codexTotals
+        }
+
         guard selectedTotals.hasUsage else { return nil }
 
         return TokenUsage(

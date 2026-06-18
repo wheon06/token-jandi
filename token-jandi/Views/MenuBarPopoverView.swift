@@ -31,7 +31,7 @@ struct MenuBarPopoverView: View {
                 Spacer()
 
                 if currentTab == .heatmap {
-                    Button(action: { viewModel.loadData() }) {
+                    Button(action: { viewModel.loadData(force: true) }) {
                         ZStack {
                             Image(systemName: "arrow.clockwise")
                                 .opacity(viewModel.isRefreshing ? 0 : 1)
@@ -104,12 +104,12 @@ struct HeatmapContentView: View {
             HStack(spacing: 10) {
                 StatCard(
                     title: L("stats.today"),
-                    value: viewModel.todayUsage?.totalTokensFormatted ?? "0",
+                    value: formatTokenCount(viewModel.summaryStats.todayTokens),
                     unit: L("stats.tokens")
                 )
                 StatCard(
                     title: L("stats.thisWeek"),
-                    value: formatTokenCount(viewModel.weeklyTokens),
+                    value: formatTokenCount(viewModel.summaryStats.weeklyTokens),
                     unit: L("stats.tokens")
                 )
                 StatCard(
@@ -119,7 +119,7 @@ struct HeatmapContentView: View {
                 )
                 StatCard(
                     title: L("stats.total"),
-                    value: formatTokenCount(viewModel.totalTokens),
+                    value: formatTokenCount(viewModel.summaryStats.totalTokens),
                     unit: L("stats.tokens")
                 )
             }

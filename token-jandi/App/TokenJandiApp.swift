@@ -44,7 +44,7 @@ struct TokenJandiApp: App {
         case .today:
             return viewModel.allSourcesTodayUsage?.totalTokensFormatted ?? "0"
         case .thisWeek:
-            return formatTokenCount(viewModel.weeklyTokens)
+            return formatTokenCount(viewModel.weeklyTokenTotal(for: .all))
         case .claudeToday:
             return formatTokenCount(viewModel.todayTokens(for: .claude))
         case .codexToday:
