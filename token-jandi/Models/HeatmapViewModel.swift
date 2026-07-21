@@ -240,7 +240,7 @@ class HeatmapViewModel: ObservableObject {
         }
 
         cells = rebuiltCells
-        summaryStats = buildSummaryStats(from: rebuiltCells, dailyUsage: dailyUsage)
+        summaryStats = buildSummaryStats(dailyUsage: dailyUsage)
 
         if let selectedDate {
             selectedCell = rebuiltCells.first(where: { calendar.isDate($0.date, inSameDayAs: selectedDate) })
@@ -248,14 +248,15 @@ class HeatmapViewModel: ObservableObject {
     }
 
     private func buildSummaryStats(
-        from cells: [DayCell],
         dailyUsage: [Date: DailyUsageData]
     ) -> UsageSummaryStats {
         let today = calendar.startOfDay(for: Date())
         let todayTokens = dailyUsage[today]?.filtered(by: selectedSource)?.totalTokens ?? 0
         let weeklyTokens = weeklyTokenTotal(in: dailyUsage, filter: selectedSource)
-        let totalTokens = cells
-            .compactMap { $0.usage?.totalTokens }
+        // "Total" reflects all available days for the selected source, not just the
+        // visible heatmap window, so usage older than the shown weeks isn't dropped.
+        let totalTokens = dailyUsage.values
+            .compactMap { $0.filtered(by: selectedSource)?.totalTokens }
             .reduce(0, +)
 
         return UsageSummaryStats(

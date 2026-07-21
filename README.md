@@ -1,8 +1,8 @@
 # Token Jandi
 
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/techinpark/jandi/blob/main/LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS-green.svg?style=flat)](https://github.com/techinpark/jandi)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/wheon06/token-jandi/blob/main/LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS-green.svg?style=flat)](https://github.com/wheon06/token-jandi)
 [![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange.svg?style=flat)](https://developer.apple.com/swift/)
 
 
