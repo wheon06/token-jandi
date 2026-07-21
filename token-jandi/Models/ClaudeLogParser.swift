@@ -209,9 +209,13 @@ struct ClaudeLogParser {
     ) {
         guard let data = try? String(contentsOf: fileURL, encoding: .utf8) else { return }
 
-        var activeTurnID: String?
         var currentModel = "Codex"
-        var latestUsageByTurn: [String: CodexTurnUsage] = [:]
+        // `total_token_usage` is cumulative for the whole session, so summing those
+        // snapshots (per event or per turn) over-counts by several multiples on long
+        // sessions. Instead we add the per-request delta (`last_token_usage`) from each
+        // `token_count` event, attributing it to that event's own day. When a delta is
+        // missing we fall back to the difference between successive cumulative totals.
+        var previousCumulativeTotal = 0
 
         for line in data.split(separator: "\n") where !line.isEmpty {
             guard let json = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
@@ -225,61 +229,70 @@ struct ClaudeLogParser {
 
             case "event_msg":
                 guard let payload = json["payload"] as? [String: Any],
-                      let eventType = payload["type"] as? String else { continue }
+                      payload["type"] as? String == "token_count",
+                      let date = parseISO8601(timestamp) else { continue }
 
-                switch eventType {
-                case "task_started":
-                    activeTurnID = payload["turn_id"] as? String
+                if let rateLimits = payload["rate_limits"] as? [String: Any] {
+                    let status = CodexRateLimitStatus(
+                        capturedAt: date,
+                        planType: rateLimits["plan_type"] as? String,
+                        primary: parseCodexRateLimitWindow(rateLimits["primary"]),
+                        secondary: parseCodexRateLimitWindow(rateLimits["secondary"]),
+                        rateLimitReachedType: rateLimits["rate_limit_reached_type"] as? String
+                    )
 
-                case "token_count":
-                    guard let date = parseISO8601(timestamp) else { continue }
-
-                    if let rateLimits = payload["rate_limits"] as? [String: Any] {
-                        let status = CodexRateLimitStatus(
-                            capturedAt: date,
-                            planType: rateLimits["plan_type"] as? String,
-                            primary: parseCodexRateLimitWindow(rateLimits["primary"]),
-                            secondary: parseCodexRateLimitWindow(rateLimits["secondary"]),
-                            rateLimitReachedType: rateLimits["rate_limit_reached_type"] as? String
-                        )
-
-                        if result.latestRateLimitStatus == nil
-                            || status.capturedAt > result.latestRateLimitStatus!.capturedAt {
-                            result.latestRateLimitStatus = status
-                        }
+                    if result.latestRateLimitStatus == nil
+                        || status.capturedAt > result.latestRateLimitStatus!.capturedAt {
+                        result.latestRateLimitStatus = status
                     }
-
-                    guard let turnID = activeTurnID,
-                          let info = payload["info"] as? [String: Any],
-                          let tokenUsage = (info["total_token_usage"] as? [String: Any])
-                              ?? (info["last_token_usage"] as? [String: Any]),
-                          let usage = parseCodexTurnUsage(tokenUsage, timestamp: date, model: currentModel),
-                          usage.totalTokens > 0 else { continue }
-
-                    latestUsageByTurn[turnID] = usage
-
-                default:
-                    continue
                 }
 
+                guard let info = payload["info"] as? [String: Any] else { continue }
+
+                let cumulativeTotal = (info["total_token_usage"] as? [String: Any])
+                    .flatMap { intValue($0["total_tokens"]) }
+
+                let requestUsage: CodexTurnUsage?
+                if let last = info["last_token_usage"] as? [String: Any] {
+                    requestUsage = parseCodexTurnUsage(last, timestamp: date, model: currentModel)
+                } else if let cumulativeTotal {
+                    let deltaTotal = max(cumulativeTotal - previousCumulativeTotal, 0)
+                    requestUsage = deltaTotal > 0
+                        ? CodexTurnUsage(
+                            timestamp: date,
+                            model: currentModel,
+                            inputTokens: 0,
+                            outputTokens: deltaTotal,
+                            totalTokens: deltaTotal
+                        )
+                        : nil
+                } else {
+                    requestUsage = nil
+                }
+
+                // Track the cumulative total so the fallback delta stays correct even
+                // when only some events carry `last_token_usage`.
+                if let cumulativeTotal {
+                    previousCumulativeTotal = cumulativeTotal
+                }
+
+                guard let usage = requestUsage, usage.totalTokens > 0 else { continue }
+
+                let day = calendar.startOfDay(for: date)
+                addUsage(
+                    to: &result.dailyUsage,
+                    date: day,
+                    source: .codex,
+                    messageCount: 1,
+                    inputTokens: usage.inputTokens,
+                    outputTokens: usage.outputTokens,
+                    model: usage.model,
+                    modelTokens: usage.totalTokens,
+                    apiCallCount: 1
+                )
             default:
                 continue
             }
-        }
-
-        for usage in latestUsageByTurn.values {
-            let day = calendar.startOfDay(for: usage.timestamp)
-            addUsage(
-                to: &result.dailyUsage,
-                date: day,
-                source: .codex,
-                messageCount: 1,
-                inputTokens: usage.inputTokens,
-                outputTokens: usage.outputTokens,
-                model: usage.model,
-                modelTokens: usage.totalTokens,
-                apiCallCount: 1
-            )
         }
     }
 
