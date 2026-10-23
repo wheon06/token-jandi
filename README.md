@@ -15,7 +15,7 @@ Check your Claude Code and Codex token usage easily from the macOS status bar.
 ## Preview 👀
 ![](./.github/images/preview.png)
 
-## What's New in 1.3.0
+## What's New in 1.4.0
 
 - Claude Code tokens are no longer counted twice, and subagent sessions are included.
 - Codex archived sessions (`.jsonl.zst`) and threads whose logs were deleted are now counted too.

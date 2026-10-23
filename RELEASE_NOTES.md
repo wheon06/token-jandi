@@ -1,6 +1,6 @@
 # Release Notes
 
-## 1.3.0 (Build 10)
+## 1.4.0 (Build 10)
 
 - Counted Codex sessions that Codex has archived (`archived_sessions/*.jsonl.zst`, decoded with zstd) and, for threads whose rollout file was deleted, their totals from Codex's thread database (`state_<n>.sqlite`). Those database-only threads are attributed to the day the thread started and flagged in the app as a possible undercount.
 - Fixed Claude Code tokens being counted roughly twice: every content block of an assistant message repeats the same usage, so responses are now counted once per `(message.id, requestId)`.
