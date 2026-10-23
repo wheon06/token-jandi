@@ -58,7 +58,7 @@ class FolderAccessManager: ObservableObject {
 
     // MARK: - Request access via NSOpenPanel
 
-    func requestFolderAccess() {
+    func requestFolderAccess(message: String? = nil) {
         NSApp.activate(ignoringOtherApps: true)
 
         let panel = NSOpenPanel()
@@ -67,9 +67,9 @@ class FolderAccessManager: ObservableObject {
         panel.canCreateDirectories = false
         panel.allowsMultipleSelection = false
         panel.prompt = L("folder.select")
-        panel.message = needsMigration
+        panel.message = message ?? (needsMigration
             ? L("folder.migrationMessage")
-            : L("folder.message")
+            : L("folder.message"))
         panel.directoryURL = realHomeDirectoryURL()
         panel.level = .floating
 

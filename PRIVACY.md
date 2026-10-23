@@ -1,6 +1,6 @@
 # Privacy Policy — Token Jandi
 
-**Last updated:** May 29, 2026
+**Last updated:** October 23, 2026
 
 ## Overview
 
@@ -19,8 +19,9 @@ Token Jandi is a macOS menu bar application that visualizes Claude Code and Code
 
 The app reads the following local files (with your permission):
 - `~/.claude/projects/*/*.jsonl` — Claude Code session logs containing token usage
-- `~/.claude/history.jsonl` — Claude Code message history
-- `~/.codex/sessions/**/*.jsonl` — Codex session logs containing per-turn token usage
+- `~/.codex/sessions/**/*.jsonl` and `~/.codex/archived_sessions/*.jsonl.zst` — Codex session logs containing per-request token usage
+- `~/.codex/state_*.sqlite` (read-only) — Codex's thread index, used for threads whose logs were deleted
+- `~/.claude/token-jandi/statusline.json` — Claude Code rate limits, written by the optional status line bridge below
 
 This data never leaves your device.
 
@@ -28,9 +29,13 @@ This data never leaves your device.
 
 Token Jandi calculates usage only from local Claude Code and Codex files available on the current Mac. If the same account is used on multiple devices, usage generated on other devices may be missing from Token Jandi.
 
+## Optional: Claude limits bridge
+
+If you turn on **Settings › Claude limits**, the app writes two things inside `~/.claude/`: a small shell script (`token-jandi-statusline.sh`) and the `statusLine` entry in `settings.json` that points Claude Code at it. Your previous status line command is preserved and keeps running, and a backup of `settings.json` is stored in `~/.claude/token-jandi/`. Turning the switch off restores the previous setting and removes the files. Nothing else in `~/.claude/` or `~/.codex/` is ever modified.
+
 ## Permissions
 
-- **Folder Access**: The app requests read-only access to your home folder or agent data folders via macOS file picker
+- **Folder Access**: The app requests access to your home folder or agent data folders via the macOS file picker. Reading is all it needs for usage data; writing is used only for the optional Claude limits bridge described above
 - **Network** (direct distribution only): Used solely to check for app updates via GitHub API
 
 ## Contact

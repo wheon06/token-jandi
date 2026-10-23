@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7A11E57E0000000000000031 /* libzstd in Frameworks */ = {isa = PBXBuildFile; productRef = 7A11E57E0000000000000032 /* libzstd */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		31545F332F7F48AE0061208D /* token-jandi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "token-jandi.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A11E57E0000000000000002 /* token-jandiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "token-jandiTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -42,6 +46,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7A11E57E0000000000000031 /* libzstd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +98,7 @@
 			);
 			name = "token-jandi";
 			packageProductDependencies = (
+				7A11E57E0000000000000032 /* libzstd */,
 			);
 			productName = "token-jandi";
 			productReference = 31545F332F7F48AE0061208D /* token-jandi.app */;
@@ -150,6 +156,9 @@
 			);
 			mainGroup = 31545F2A2F7F48AE0061208D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7A11E57E0000000000000033 /* XCRemoteSwiftPackageReference "zstd" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 31545F342F7F48AE0061208D /* Products */;
 			projectDirPath = "";
@@ -478,7 +487,7 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "token-jandi/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Token Jandi";
@@ -526,7 +535,7 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "token-jandi/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Token Jandi";
@@ -574,7 +583,7 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "token-jandi/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Token Jandi";
@@ -623,7 +632,7 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "token-jandi/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Token Jandi";
@@ -766,6 +775,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7A11E57E0000000000000033 /* XCRemoteSwiftPackageReference "zstd" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/zstd.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.7;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7A11E57E0000000000000032 /* libzstd */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7A11E57E0000000000000033 /* XCRemoteSwiftPackageReference "zstd" */;
+			productName = libzstd;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 31545F2B2F7F48AE0061208D /* Project object */;
 }

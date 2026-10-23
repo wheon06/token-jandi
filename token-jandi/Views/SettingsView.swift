@@ -4,156 +4,112 @@ struct SettingsView: View {
     @ObservedObject var localization: LocalizationManager
     @ObservedObject var viewModel: UsageViewModel
     @ObservedObject var folderAccess: FolderAccessManager
+    @ObservedObject var bridge: ClaudeBridgeController
     @AppStorage("showMenuBarUsage") private var showMenuBarUsage = true
     @AppStorage("menuBarDisplayMode") private var menuBarDisplayModeRaw = MenuBarDisplayMode.today.rawValue
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Menu bar display mode
-            HStack {
-                Label(L("settings.menuBarUsage"), systemImage: "menubar.rectangle")
-                    .font(.caption)
-                Spacer()
-                Picker("", selection: menuBarDisplayModeBinding) {
-                    ForEach(MenuBarDisplayMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
+        VStack(alignment: .leading, spacing: Theme.groupSpacing) {
+            SectionGroup(L("settings.section.display")) {
+                SettingRow(title: L("settings.menuBarUsage"), icon: "menubar.rectangle") {
+                    Picker("", selection: menuBarDisplayModeBinding) {
+                        ForEach(MenuBarDisplayMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
                     }
+                    .labelsHidden()
+                    .frame(width: 140)
                 }
-                .pickerStyle(.menu)
-                .frame(width: 150)
+
+                SettingRow(title: L("settings.refreshInterval"), icon: "arrow.clockwise") {
+                    Picker("", selection: $viewModel.refreshIntervalRaw) {
+                        ForEach(RefreshInterval.allCases) { interval in
+                            Text(interval.label).tag(interval.rawValue)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 140)
+                }
+
+                SettingRow(title: L("settings.language"), icon: "globe") {
+                    Picker("", selection: $localization.selectedLanguage) {
+                        ForEach(AppLanguage.allCases) { lang in
+                            Text(lang.displayName).tag(lang)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 140)
+                }
             }
 
-            // Auto refresh interval
-            HStack {
-                Label(L("settings.refreshInterval"), systemImage: "arrow.clockwise")
-                    .font(.caption)
-                Spacer()
-                Picker("", selection: $viewModel.refreshIntervalRaw) {
-                    ForEach(RefreshInterval.allCases) { interval in
-                        Text(interval.label).tag(interval.rawValue)
+            SectionGroup(L("settings.section.data")) {
+                SettingRow(title: L("settings.source"), icon: "folder") {
+                    Text(folderAccess.displayPath)
+                        .font(Theme.body)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Button(action: { folderAccess.requestFolderAccess() }) {
+                        Image(systemName: "ellipsis.circle")
+                            .font(Theme.body)
                     }
-                }
-                .pickerStyle(.menu)
-                .frame(width: 100)
-            }
-
-            Divider()
-
-            // Language
-            HStack {
-                Label(L("settings.language"), systemImage: "globe")
-                    .font(.caption)
-                Spacer()
-                Picker("", selection: $localization.selectedLanguage) {
-                    ForEach(AppLanguage.allCases) { lang in
-                        Text(lang.displayName).tag(lang)
-                    }
-                }
-                .pickerStyle(.menu)
-                .frame(width: 140)
-            }
-
-            Divider()
-
-            // Data source / folder
-            HStack {
-                Label(L("settings.source"), systemImage: "folder")
-                    .font(.caption)
-                Spacer()
-                Text(folderAccess.displayPath)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Button(action: { folderAccess.requestFolderAccess() }) {
-                    Image(systemName: "folder.badge.gearshape")
-                        .font(.caption2)
-                }
-                .buttonStyle(.plain)
-            }
-
-            if folderAccess.needsMigration {
-                HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
-                        .font(.caption2)
-                    Text(L("settings.migrationHint"))
-                        .font(.caption2)
-                        .foregroundColor(.orange)
-                    Spacer()
-                    Button(L("settings.migrationAction")) {
-                        folderAccess.requestFolderAccess()
-                    }
-                    .font(.caption2)
                     .buttonStyle(.plain)
-                    .foregroundColor(.accentColor)
-                }
-            }
-
-            HStack(alignment: .top, spacing: 5) {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.caption2)
                     .foregroundColor(.secondary)
-                    .padding(.top, 1)
+                }
+
+                if folderAccess.needsMigration {
+                    HStack {
+                        Text(L("settings.migrationHint"))
+                            .font(Theme.caption)
+                            .foregroundColor(.orange)
+                        Spacer()
+                        Button(L("settings.migrationAction")) { folderAccess.requestFolderAccess() }
+                            .font(Theme.caption)
+                            .controlSize(.small)
+                    }
+                }
+
+                ClaudeBridgeRow(viewModel: viewModel, bridge: bridge, localization: localization)
 
                 Text(L("settings.localDataNotice"))
-                    .font(.caption2)
+                    .font(Theme.caption)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Divider()
-
-            // Author
-            HStack {
-                Label(L("settings.author"), systemImage: "person")
-                    .font(.caption)
-                Spacer()
-                Text("Heeyeon Lee")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            // Version
-            HStack {
-                Label(L("settings.version"), systemImage: "info.circle")
-                    .font(.caption)
-                Spacer()
-                Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            // Privacy Policy
-            HStack {
-                Label(L("settings.privacy"), systemImage: "hand.raised")
-                    .font(.caption)
-                Spacer()
-                Button(action: {
-                    if let url = URL(string: "https://github.com/wheon06/token-jandi/blob/main/PRIVACY.md") {
-                        NSWorkspace.shared.open(url)
+            SectionGroup(L("settings.section.about")) {
+                SettingRow(title: L("settings.version"), icon: "info.circle") {
+                    Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
+                        .font(Theme.body)
+                        .foregroundColor(.secondary)
+                }
+                SettingRow(title: L("settings.author"), icon: "person") {
+                    Text("Heeyeon Lee")
+                        .font(Theme.body)
+                        .foregroundColor(.secondary)
+                }
+                SettingRow(title: L("settings.privacy"), icon: "hand.raised") {
+                    Button(action: {
+                        if let url = URL(string: "https://github.com/wheon06/token-jandi/blob/main/PRIVACY.md") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }) {
+                        Image(systemName: "arrow.up.right")
+                            .font(Theme.body)
                     }
-                }) {
-                    Image(systemName: "arrow.up.right.square")
-                        .font(.caption2)
+                    .buttonStyle(.plain)
+                    .foregroundColor(.secondary)
                 }
-                .buttonStyle(.plain)
             }
 
-            Divider()
-
-            // Quit
             HStack {
                 Spacer()
-                Button(action: { NSApplication.shared.terminate(nil) }) {
-                    Text(L("action.quit"))
-                        .font(.caption)
-                }
-                .buttonStyle(.plain)
-                .foregroundColor(.red)
+                Button(L("action.quit")) { NSApplication.shared.terminate(nil) }
+                    .buttonStyle(.plain)
+                    .font(Theme.body)
+                    .foregroundColor(.secondary)
             }
         }
-        .padding(.vertical, 4)
     }
 
     private var menuBarDisplayModeBinding: Binding<MenuBarDisplayMode> {
@@ -162,7 +118,6 @@ struct SettingsView: View {
                 if !showMenuBarUsage {
                     return .iconOnly
                 }
-
                 return MenuBarDisplayMode(rawValue: menuBarDisplayModeRaw) ?? .today
             },
             set: { mode in
@@ -170,5 +125,61 @@ struct SettingsView: View {
                 menuBarDisplayModeRaw = mode.rawValue
             }
         )
+    }
+}
+
+/// One switch that installs or removes the Claude status line bridge. The app
+/// writes the script and rewrites `statusLine` in settings.json itself, keeping
+/// the previous status line command running and a backup of the file.
+struct ClaudeBridgeRow: View {
+    @ObservedObject var viewModel: UsageViewModel
+    @ObservedObject var bridge: ClaudeBridgeController
+    @ObservedObject var localization: LocalizationManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            SettingRow(title: L("settings.claudeBridge"), icon: "gauge.with.needle") {
+                Image(systemName: "questionmark.circle")
+                    .font(Theme.caption)
+                    .foregroundColor(.secondary)
+                    .help(L("settings.claudeBridge.help"))
+                Toggle("", isOn: Binding(
+                    get: { bridge.isInstalled },
+                    set: { bridge.setEnabled($0) }
+                ))
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .labelsHidden()
+                .disabled(!bridge.isAvailable)
+            }
+
+            if let caption {
+                Text(caption.text)
+                    .font(Theme.caption)
+                    .foregroundColor(caption.color)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 24)
+            }
+        }
+        .onAppear { bridge.refresh() }
+    }
+
+    /// One short line under the switch, only when there is something to say.
+    private var caption: (text: String, color: Color)? {
+        if let errorMessage = bridge.errorMessage {
+            return (errorMessage, .red)
+        }
+        if !bridge.isAvailable {
+            return (L("settings.claudeBridge.notAvailable"), .secondary)
+        }
+        guard bridge.isInstalled else { return nil }
+        guard let status = viewModel.claudeRateLimitStatus else {
+            return (L("settings.claudeBridge.waiting"), .secondary)
+        }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = localization.locale
+        formatter.unitsStyle = .short
+        return (L("settings.claudeBridge.connected", formatter.localizedString(for: status.capturedAt, relativeTo: Date())), .secondary)
     }
 }

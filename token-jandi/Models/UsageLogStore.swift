@@ -35,17 +35,35 @@ actor UsageLogStore {
 
         var report = UsageParseReport()
         var nextCache: [String: CachedFile] = [:]
+        var filesToParse: [LogFileFingerprint] = []
 
-        for file in signature.files {
-            let cached = cache[file.path]
-            let parsed: ParsedLogFile
-            if let cached, cached.fingerprint == file {
-                parsed = cached.parsed
+        for file in signature.files where file.kind != .codexThreadDatabase {
+            if let cached = cache[file.path], cached.fingerprint == file {
+                nextCache[file.path] = cached
             } else {
-                parsed = autoreleasepool { parser.parse(file: file) }
+                filesToParse.append(file)
             }
+        }
+
+        // Files are independent, so new or changed ones are parsed in parallel. The
+        // first load after install (hundreds of archived Codex sessions) is the case
+        // that benefits; a routine refresh usually touches one or two files.
+        for (file, parsed) in Self.parseConcurrently(filesToParse, with: parser) {
             nextCache[file.path] = CachedFile(fingerprint: file, parsed: parsed)
-            report.merge(parsed)
+        }
+
+        for file in signature.files where file.kind != .codexThreadDatabase {
+            if let cached = nextCache[file.path] {
+                report.merge(cached.parsed)
+            }
+        }
+
+        // The thread database fills in Codex threads whose rollout file no longer
+        // exists. Which threads those are depends on the file list, so it is not
+        // cached per file; the query itself is cheap.
+        if let database = signature.files.first(where: { $0.kind == .codexThreadDatabase }) {
+            let covered = UsageLogParser.codexThreadIDs(coveredBy: signature.files)
+            report.merge(parser.parseCodexThreadDatabase(database, excludingThreadIDs: covered))
         }
 
         cache = nextCache
@@ -58,6 +76,25 @@ actor UsageLogStore {
         )
         lastSnapshot = snapshot
         return snapshot
+    }
+
+    private static func parseConcurrently(
+        _ files: [LogFileFingerprint],
+        with parser: UsageLogParser
+    ) -> [(LogFileFingerprint, ParsedLogFile)] {
+        guard !files.isEmpty else { return [] }
+
+        let lock = NSLock()
+        var results = [ParsedLogFile?](repeating: nil, count: files.count)
+
+        DispatchQueue.concurrentPerform(iterations: files.count) { index in
+            let parsed = autoreleasepool { parser.parse(file: files[index]) }
+            lock.lock()
+            results[index] = parsed
+            lock.unlock()
+        }
+
+        return zip(files, results).map { ($0, $1 ?? ParsedLogFile()) }
     }
 
     private func invalidateCacheIfTimeZoneChanged(_ identifier: String) {

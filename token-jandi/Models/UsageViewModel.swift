@@ -26,6 +26,7 @@ class UsageViewModel: ObservableObject {
     @Published var selectedCell: DayCell?
     @Published private(set) var hasUsageData = false
     @Published private(set) var codexRateLimitStatus: CodexRateLimitStatus?
+    @Published private(set) var claudeRateLimitStatus: ClaudeRateLimitStatus?
     @Published private(set) var summaryStats = UsageSummaryStats()
     @Published private(set) var isRefreshing = false
     @Published var selectedSource: UsageSourceFilter = .all {
@@ -110,6 +111,7 @@ class UsageViewModel: ObservableObject {
     private func apply(_ snapshot: UsageLogStore.Snapshot) {
         dailyUsage = snapshot.report.dailyUsage
         codexRateLimitStatus = snapshot.report.codexRateLimitStatus
+        claudeRateLimitStatus = snapshot.report.claudeRateLimitStatus
         hasUsageData = snapshot.hasAnyDataSource
             && dailyUsage.values.contains { $0.totals.hasUsage }
         rebuildDerivedData()

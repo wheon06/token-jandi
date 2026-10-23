@@ -40,6 +40,15 @@ class LocalizationManager: ObservableObject {
         }
     }
 
+    /// Locale matching the in-app language, for date and number formatting.
+    var locale: Locale {
+        switch selectedLanguage {
+        case .system: return .current
+        case .en: return Locale(identifier: "en_US")
+        case .ko: return Locale(identifier: "ko_KR")
+        }
+    }
+
     func localized(_ key: String) -> String {
         table(for: resolvedLanguage)[key]
             ?? table(for: Self.fallbackLanguage)[key]

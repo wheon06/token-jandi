@@ -4,24 +4,34 @@
 "stats.streak" = "Streak";
 "stats.total" = "Total";
 "stats.tokens" = "tokens";
-"stats.days" = "days";
+"stats.daysSuffix" = "d";
+"limits.title" = "Limits";
+"heatmap.hover" = "Hover a day for details";
+"chart.max" = "peak";
+"settings.section.display" = "Display";
+"settings.section.data" = "Data";
+"settings.section.about" = "About";
 
 // MARK: - Sources
 "source.all" = "All";
 "source.claude" = "Claude";
 "source.codex" = "Codex";
 
-// MARK: - Codex Limits
-"codexLimit.title" = "Codex limits";
-"codexLimit.windowMinutes" = "%dm limit";
-"codexLimit.windowHours" = "%dh limit";
-"codexLimit.windowDays" = "%dd limit";
-"codexLimit.resets" = "Resets";
-"codexLimit.resetDone" = "Window reset";
+// MARK: - Limits
+"claudeLimit.hint" = "Show Claude 5h / 7d limits here";
+"claudeLimit.hintAction" = "Turn on";
+"claudeLimit.hintHelp" = "Installs a small status line bridge; details in Settings › Claude limits";
+"limit.windowMinutes" = "%dm";
+"limit.windowHours" = "%dh";
+"limit.windowDays" = "%dd";
+"limit.resetDone" = "reset";
+"spendLimit.title" = "Spend · %@";
+"limit.period.daily" = "daily";
+"limit.period.weekly" = "weekly";
+"limit.period.monthly" = "monthly";
+"limit.period.unknown" = "period";
 
 // MARK: - Heatmap
-"heatmap.less" = "Less";
-"heatmap.more" = "More";
 "heatmap.noUsage" = "No usage";
 
 // MARK: - Chart
@@ -41,7 +51,7 @@
 // MARK: - Loading / Empty
 "loading.title" = "Checking data";
 "loading.message" = "Checking Claude and Codex logs.";
-"empty.title" = "No Claude Code or Codex data found";
+"empty.title" = "No Claude Code or Codex data yet";
 "empty.message" = "Select your home folder to start tracking.\nThe app will automatically find .claude and .codex data.";
 
 // MARK: - Folder access
@@ -68,4 +78,12 @@
 "settings.migrationHint" = "Re-select home folder to enable Codex tracking";
 "settings.migrationAction" = "Re-select";
 "settings.localDataNotice" = "Usage is based only on local files from this Mac, so multi-device account usage may be incomplete.";
+"settings.claudeBridge" = "Claude limits";
+"settings.claudeBridge.connected" = "Connected · %@";
+"settings.claudeBridge.notAvailable" = "Claude Code not found";
+"settings.claudeBridge.waiting" = "Shows after the next Claude Code response";
+"settings.claudeBridge.settingsUnreadable" = "~/.claude/settings.json could not be parsed, so it was left untouched.";
+"settings.claudeBridge.help" = "Claude Code reports its 5h / 7d limits only to the status line. This installs a small bridge script and points statusLine in ~/.claude/settings.json at it. Your previous status line keeps running, a backup of settings.json is kept in ~/.claude/token-jandi, and turning it off restores the previous setting. Pro / Max plans only.";
+"settings.claudeBridge.permissionDenied" = "No write access to the Claude folder";
+"folder.bridgeMessage" = "Token Jandi needs write access to your home folder to install the Claude limits bridge. Please select your home folder.";
 "settings.privacy" = "Privacy Policy";

@@ -3,8 +3,9 @@ import SwiftUI
 struct GrassHeatmapView: View {
     @ObservedObject var viewModel: UsageViewModel
 
-    private let cellSize: CGFloat = 12
+    private let cellSize: CGFloat = 13
     private let cellSpacing: CGFloat = 3
+    private let labelWidth: CGFloat = 24
 
     private var dayLabels: [(key: String, display: String)] {
         [
@@ -17,7 +18,7 @@ struct GrassHeatmapView: View {
         let weeks = viewModel.weeks
         let monthLabels = viewModel.monthLabels
 
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             // Month labels
             HStack(spacing: 0) {
                 ForEach(Array(monthLabels.enumerated()), id: \.offset) { index, label in
@@ -26,103 +27,123 @@ struct GrassHeatmapView: View {
                         : weeks.count
                     let span = nextWeekIndex - label.weekIndex
 
-                    // A month that only spans one column has no room for its name;
-                    // leave the column blank so neighbouring labels don't overlap.
+                    // A month that only spans one column has no room for its name.
                     Text(span >= 2 ? label.name : "")
-                        .font(.system(size: 9))
+                        .font(Theme.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                         .frame(width: CGFloat(span) * (cellSize + cellSpacing), alignment: .leading)
                         .clipped()
                 }
             }
-            .padding(.leading, 28)
+            .padding(.leading, labelWidth)
 
-            // Grid
             HStack(alignment: .top, spacing: 0) {
-                // Day labels
-                VStack(alignment: .trailing, spacing: cellSpacing) {
+                VStack(alignment: .leading, spacing: cellSpacing) {
                     ForEach(dayLabels, id: \.key) { item in
                         Text(item.display)
-                            .font(.system(size: 9))
+                            .font(Theme.caption)
                             .foregroundColor(.secondary)
                             .frame(height: cellSize)
                     }
                 }
-                .frame(width: 28)
+                .frame(width: labelWidth, alignment: .leading)
 
-                // Cells
                 HStack(alignment: .top, spacing: cellSpacing) {
                     ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
                         VStack(spacing: cellSpacing) {
                             ForEach(week) { cell in
-                                Button {
-                                    viewModel.selectedCell = cell
-                                } label: {
-                                    GrassCellView(cell: cell, size: cellSize)
-                                }
-                                .buttonStyle(.plain)
-                                .onHover { hovering in
-                                    if hovering {
-                                        viewModel.selectedCell = cell
+                                GrassCellView(cell: cell, size: cellSize, isSelected: viewModel.selectedCell?.id == cell.id)
+                                    .onHover { hovering in
+                                        if hovering {
+                                            viewModel.selectedCell = cell
+                                        }
                                     }
-                                }
                             }
                         }
                     }
                 }
             }
 
-            // Legend — right aligned, compact
-            HStack(spacing: 3) {
-                Spacer()
-                Text(L("heatmap.less"))
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary)
-                ForEach(0..<5) { level in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(colorForLevel(level))
-                        .frame(width: 10, height: 10)
+            // One line: hovered day on the left, legend on the right.
+            HStack(alignment: .firstTextBaseline) {
+                if let cell = viewModel.selectedCell {
+                    Text(detailLine(for: cell))
+                        .font(Theme.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                } else {
+                    Text(L("heatmap.hover"))
+                        .font(Theme.caption)
+                        .foregroundColor(.secondary)
                 }
-                Text(L("heatmap.more"))
-                    .font(.system(size: 9))
-                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                HStack(spacing: 3) {
+                    ForEach(0..<5) { level in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(colorForLevel(level))
+                            .frame(width: 9, height: 9)
+                    }
+                }
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    /// "Oct 22 (Wed) · 33.8M · Claude 30.1M · Codex 3.7M"
+    private func detailLine(for cell: DayCell) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = LocalizationManager.shared.locale
+        formatter.setLocalizedDateFormatFromTemplate("M d EEE")
+        var parts = [formatter.string(from: cell.date)]
+
+        guard let usage = cell.usage else {
+            parts.append(L("heatmap.noUsage"))
+            return parts.joined(separator: " · ")
+        }
+
+        parts.append(usage.totalTokensFormatted)
+        let sources = usage.activeSources.filter { source in
+            switch viewModel.selectedSource {
+            case .all: return true
+            case .claude: return source == .claude
+            case .codex: return source == .codex
             }
         }
+        if sources.count > 1 || viewModel.selectedSource == .all {
+            for source in sources {
+                parts.append("\(source.title) \(formatTokenCount(usage.totalTokens(for: source)))")
+            }
+        }
+        return parts.joined(separator: " · ")
     }
 }
 
 struct GrassCellView: View {
     let cell: DayCell
     let size: CGFloat
+    let isSelected: Bool
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 2)
+        RoundedRectangle(cornerRadius: 3)
             .fill(colorForLevel(cell.level))
             .frame(width: size, height: size)
-            .help(tooltipText)
-    }
-
-    /// Simple tooltip — just date + total tokens
-    private var tooltipText: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MM.dd"
-        let dateStr = formatter.string(from: cell.date)
-
-        if let usage = cell.usage {
-            return "\(dateStr) — \(usage.totalTokensFormatted)"
-        }
-        return dateStr
+            .overlay(
+                RoundedRectangle(cornerRadius: 3)
+                    .strokeBorder(Color.primary.opacity(isSelected ? 0.35 : 0), lineWidth: 1)
+            )
     }
 }
 
 func colorForLevel(_ level: Int) -> Color {
     switch level {
-    case 0: return Color(nsColor: NSColor.systemGray).opacity(0.2)
-    case 1: return Color.green.opacity(0.3)
-    case 2: return Color.green.opacity(0.5)
-    case 3: return Color.green.opacity(0.75)
-    case 4: return Color.green
+    case 0: return Theme.track
+    case 1: return Theme.accent.opacity(0.3)
+    case 2: return Theme.accent.opacity(0.5)
+    case 3: return Theme.accent.opacity(0.75)
+    case 4: return Theme.accent
     default: return Color.clear
     }
 }
