@@ -2,7 +2,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var localization: LocalizationManager
-    @ObservedObject var viewModel: HeatmapViewModel
+    @ObservedObject var viewModel: UsageViewModel
+    @ObservedObject var folderAccess: FolderAccessManager
     @AppStorage("showMenuBarUsage") private var showMenuBarUsage = true
     @AppStorage("menuBarDisplayMode") private var menuBarDisplayModeRaw = MenuBarDisplayMode.today.rawValue
 
@@ -59,24 +60,19 @@ struct SettingsView: View {
                 Label(L("settings.source"), systemImage: "folder")
                     .font(.caption)
                 Spacer()
-                if let url = viewModel.folderAccessManager?.claudeDirectoryURL {
-                    Text(url.path.replacingOccurrences(of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                } else {
-                    Text("~/")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                Button(action: { viewModel.folderAccessManager?.requestFolderAccess() }) {
+                Text(folderAccess.displayPath)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Button(action: { folderAccess.requestFolderAccess() }) {
                     Image(systemName: "folder.badge.gearshape")
                         .font(.caption2)
                 }
                 .buttonStyle(.plain)
             }
 
-            if viewModel.folderAccessManager?.needsMigration == true {
+            if folderAccess.needsMigration {
                 HStack(spacing: 4) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(.orange)
@@ -86,7 +82,7 @@ struct SettingsView: View {
                         .foregroundColor(.orange)
                     Spacer()
                     Button(L("settings.migrationAction")) {
-                        viewModel.folderAccessManager?.requestFolderAccess()
+                        folderAccess.requestFolderAccess()
                     }
                     .font(.caption2)
                     .buttonStyle(.plain)

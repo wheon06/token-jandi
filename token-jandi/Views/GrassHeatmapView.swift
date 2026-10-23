@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct GrassHeatmapView: View {
-    @ObservedObject var viewModel: HeatmapViewModel
+    @ObservedObject var viewModel: UsageViewModel
 
     private let cellSize: CGFloat = 12
     private let cellSpacing: CGFloat = 3
@@ -14,19 +14,26 @@ struct GrassHeatmapView: View {
     }
 
     var body: some View {
+        let weeks = viewModel.weeks
+        let monthLabels = viewModel.monthLabels
+
         VStack(alignment: .leading, spacing: 4) {
             // Month labels
             HStack(spacing: 0) {
-                ForEach(Array(viewModel.monthLabels.enumerated()), id: \.offset) { index, label in
-                    let (name, weekIndex) = label
-                    let nextWeekIndex = index + 1 < viewModel.monthLabels.count
-                        ? viewModel.monthLabels[index + 1].1
-                        : viewModel.weeks.count
+                ForEach(Array(monthLabels.enumerated()), id: \.offset) { index, label in
+                    let nextWeekIndex = index + 1 < monthLabels.count
+                        ? monthLabels[index + 1].weekIndex
+                        : weeks.count
+                    let span = nextWeekIndex - label.weekIndex
 
-                    Text(name)
+                    // A month that only spans one column has no room for its name;
+                    // leave the column blank so neighbouring labels don't overlap.
+                    Text(span >= 2 ? label.name : "")
                         .font(.system(size: 9))
                         .foregroundColor(.secondary)
-                        .frame(width: CGFloat(nextWeekIndex - weekIndex) * (cellSize + cellSpacing), alignment: .leading)
+                        .lineLimit(1)
+                        .frame(width: CGFloat(span) * (cellSize + cellSpacing), alignment: .leading)
+                        .clipped()
                 }
             }
             .padding(.leading, 28)
@@ -46,7 +53,7 @@ struct GrassHeatmapView: View {
 
                 // Cells
                 HStack(alignment: .top, spacing: cellSpacing) {
-                    ForEach(Array(viewModel.weeks.enumerated()), id: \.offset) { _, week in
+                    ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
                         VStack(spacing: cellSpacing) {
                             ForEach(week) { cell in
                                 Button {
@@ -118,15 +125,4 @@ func colorForLevel(_ level: Int) -> Color {
     case 4: return Color.green
     default: return Color.clear
     }
-}
-
-func formatNumber(_ n: Int) -> String {
-    let formatter = NumberFormatter()
-    formatter.numberStyle = .decimal
-    return formatter.string(from: NSNumber(value: n)) ?? "\(n)"
-}
-
-/// Localization helper
-func L(_ key: String) -> String {
-    LocalizationManager.shared.localized(key)
 }

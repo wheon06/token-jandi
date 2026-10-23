@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -project token-jandi.xcodeproj \
+            -scheme token-jandi \
+            -destination 'platform=macOS' \
+            -derivedDataPath build/DerivedData-CI \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY=""

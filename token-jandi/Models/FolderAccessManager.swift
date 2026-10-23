@@ -2,13 +2,23 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// Owns read access to the folder that contains `.claude` and `.codex`.
+///
+/// Inside the App Sandbox the user has to pick the folder once; a security-scoped
+/// bookmark keeps the access across launches. Outside the sandbox the home folder
+/// is used directly.
 class FolderAccessManager: ObservableObject {
-    @Published var hasAccess = false
-    // This stores the selected data root (preferably the home folder) so the app can
-    // discover both `.claude` and `.codex` inside it when available.
-    @Published var claudeDirectoryURL: URL?
+    @Published private(set) var hasAccess = false
+    /// The selected data root (preferably the home folder). Both `.claude` and
+    /// `.codex` are discovered inside it.
+    @Published private(set) var dataRootURL: URL?
+    /// `true` when the saved bookmark points to a single data dir (e.g. `~/.claude`)
+    /// instead of the home folder, so the UI can prompt re-selection.
+    @Published private(set) var needsMigration = false
 
     private let bookmarkKey = "claudeFolderBookmark"
+    private static let hiddenDataDirs: Set<String> = [".claude", ".codex"]
+    private var accessedURL: URL?
 
     private var isSandboxed: Bool {
         ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
@@ -18,16 +28,32 @@ class FolderAccessManager: ObservableObject {
         if isSandboxed {
             restoreBookmark()
         } else {
-            let homeURL = FileManager.default.homeDirectoryForCurrentUser
-            let claudeDir = homeURL.appendingPathComponent(".claude")
-            let codexDir = homeURL.appendingPathComponent(".codex")
-
-            if FileManager.default.fileExists(atPath: claudeDir.path)
-                || FileManager.default.fileExists(atPath: codexDir.path) {
-                claudeDirectoryURL = homeURL
+            let homeURL = realHomeDirectoryURL()
+            let hasData = Self.hiddenDataDirs.contains { name in
+                FileManager.default.fileExists(atPath: homeURL.appendingPathComponent(name).path)
+            }
+            if hasData {
+                dataRootURL = homeURL
                 hasAccess = true
             }
         }
+    }
+
+    deinit {
+        stopAccessing()
+    }
+
+    /// Path shown in Settings, with the real home folder abbreviated to `~`.
+    var displayPath: String {
+        guard let path = dataRootURL?.path else { return "~/" }
+        let home = realHomeDirectoryURL().path
+        if path == home {
+            return "~/"
+        }
+        if path.hasPrefix(home + "/") {
+            return "~" + path.dropFirst(home.count)
+        }
+        return path
     }
 
     // MARK: - Request access via NSOpenPanel
@@ -44,20 +70,20 @@ class FolderAccessManager: ObservableObject {
         panel.message = needsMigration
             ? L("folder.migrationMessage")
             : L("folder.message")
-        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
+        panel.directoryURL = realHomeDirectoryURL()
+        panel.level = .floating
 
         panel.begin { [weak self] response in
-            guard let self = self, response == .OK, let selectedURL = panel.url else { return }
-
-            let targetURL = selectedURL
+            guard let self, response == .OK, let selectedURL = panel.url else { return }
 
             if self.isSandboxed {
-                self.saveBookmark(for: targetURL)
+                self.saveBookmark(for: selectedURL)
             } else {
-                self.claudeDirectoryURL = targetURL
+                self.stopAccessing()
+                self.dataRootURL = selectedURL
                 self.hasAccess = true
             }
-            self.needsMigration = false
+            self.needsMigration = Self.hiddenDataDirs.contains(selectedURL.lastPathComponent)
         }
     }
 
@@ -77,12 +103,6 @@ class FolderAccessManager: ObservableObject {
         }
     }
 
-    private static let hiddenDataDirs: Set<String> = [".claude", ".codex"]
-
-    /// `true` when the saved bookmark points to a single data dir (e.g. `~/.claude`)
-    /// instead of the home folder, so the UI can prompt re-selection.
-    @Published var needsMigration = false
-
     private func restoreBookmark() {
         guard let data = UserDefaults.standard.data(forKey: bookmarkKey) else { return }
 
@@ -95,29 +115,34 @@ class FolderAccessManager: ObservableObject {
                 bookmarkDataIsStale: &isStale
             )
 
-            if isStale {
-                saveBookmark(for: url)
-            } else {
-                startAccessing(url: url)
+            // Access has to be active before a replacement bookmark can be created.
+            startAccessing(url: url)
+            if isStale, let refreshed = try? url.bookmarkData(
+                options: .withSecurityScope,
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            ) {
+                UserDefaults.standard.set(refreshed, forKey: bookmarkKey)
             }
 
             // Flag legacy bookmarks that point directly to ~/.claude or ~/.codex
             // so the app can prompt the user to re-select the home folder.
-            if Self.hiddenDataDirs.contains(url.lastPathComponent) {
-                needsMigration = true
-            }
+            needsMigration = Self.hiddenDataDirs.contains(url.lastPathComponent)
         } catch {
             hasAccess = false
         }
     }
 
     private func startAccessing(url: URL) {
+        stopAccessing()
         _ = url.startAccessingSecurityScopedResource()
-        claudeDirectoryURL = url
+        accessedURL = url
+        dataRootURL = url
         hasAccess = true
     }
 
-    func stopAccessing() {
-        claudeDirectoryURL?.stopAccessingSecurityScopedResource()
+    private func stopAccessing() {
+        accessedURL?.stopAccessingSecurityScopedResource()
+        accessedURL = nil
     }
 }

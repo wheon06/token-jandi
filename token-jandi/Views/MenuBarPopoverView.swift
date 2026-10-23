@@ -7,7 +7,7 @@ enum PopoverTab {
 }
 
 struct MenuBarPopoverView: View {
-    @ObservedObject var viewModel: HeatmapViewModel
+    @ObservedObject var viewModel: UsageViewModel
     @ObservedObject var folderAccess: FolderAccessManager
     @ObservedObject var localization = LocalizationManager.shared
     @State private var currentTab: PopoverTab = .heatmap
@@ -30,24 +30,8 @@ struct MenuBarPopoverView: View {
 
                 Spacer()
 
-                if currentTab == .heatmap {
-                    Button(action: { viewModel.loadData(force: true) }) {
-                        ZStack {
-                            Image(systemName: "arrow.clockwise")
-                                .opacity(viewModel.isRefreshing ? 0 : 1)
-
-                            if viewModel.isRefreshing {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .scaleEffect(0.55)
-                            }
-                        }
-                        .frame(width: 18, height: 18)
-                        .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(viewModel.isRefreshing)
-                    .help(viewModel.isRefreshing ? L("action.refreshing") : L("action.refresh"))
+                if currentTab != .settings {
+                    RefreshButton(viewModel: viewModel)
                 }
             }
 
@@ -55,7 +39,7 @@ struct MenuBarPopoverView: View {
 
             if viewModel.isLoadingWithoutData && currentTab != .settings {
                 LoadingStateView()
-            } else if !viewModel.hasClaudeData && currentTab != .settings {
+            } else if !viewModel.hasUsageData && currentTab != .settings {
                 EmptyStateView(folderAccess: folderAccess)
             } else {
                 switch currentTab {
@@ -64,13 +48,37 @@ struct MenuBarPopoverView: View {
                 case .detail:
                     DetailContentView(viewModel: viewModel)
                 case .settings:
-                    SettingsView(localization: localization, viewModel: viewModel)
+                    SettingsView(localization: localization, viewModel: viewModel, folderAccess: folderAccess)
                 }
             }
         }
         .padding(16)
         .frame(width: 380)
         .id(localization.selectedLanguage)
+    }
+}
+
+struct RefreshButton: View {
+    @ObservedObject var viewModel: UsageViewModel
+
+    var body: some View {
+        Button(action: { viewModel.loadData(force: true) }) {
+            ZStack {
+                Image(systemName: "arrow.clockwise")
+                    .opacity(viewModel.isRefreshing ? 0 : 1)
+
+                if viewModel.isRefreshing {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.55)
+                }
+            }
+            .frame(width: 18, height: 18)
+            .foregroundColor(.secondary)
+        }
+        .buttonStyle(.plain)
+        .disabled(viewModel.isRefreshing)
+        .help(viewModel.isRefreshing ? L("action.refreshing") : L("action.refresh"))
     }
 }
 
@@ -95,7 +103,7 @@ struct TabButton: View {
 // MARK: - Heatmap Tab (simple)
 
 struct HeatmapContentView: View {
-    @ObservedObject var viewModel: HeatmapViewModel
+    @ObservedObject var viewModel: UsageViewModel
 
     var body: some View {
         VStack(spacing: 12) {
@@ -108,8 +116,8 @@ struct HeatmapContentView: View {
                     unit: L("stats.tokens")
                 )
                 StatCard(
-                    title: L("stats.thisWeek"),
-                    value: formatTokenCount(viewModel.summaryStats.weeklyTokens),
+                    title: L("stats.last7Days"),
+                    value: formatTokenCount(viewModel.summaryStats.last7DaysTokens),
                     unit: L("stats.tokens")
                 )
                 StatCard(
@@ -164,11 +172,11 @@ struct CodexRateLimitsView: View {
 
             HStack(spacing: 8) {
                 if let primary = status.primary {
-                    CodexLimitWindowCard(title: L("codexLimit.primary"), window: primary)
+                    CodexLimitWindowCard(window: primary)
                 }
 
                 if let secondary = status.secondary {
-                    CodexLimitWindowCard(title: L("codexLimit.secondary"), window: secondary)
+                    CodexLimitWindowCard(window: secondary)
                 }
             }
         }
@@ -176,47 +184,29 @@ struct CodexRateLimitsView: View {
 }
 
 struct CodexLimitWindowCard: View {
-    let title: String
     let window: CodexRateLimitWindow
 
-    private var fraction: CGFloat {
-        CGFloat(min(max(window.usedPercent / 100, 0), 1))
-    }
-
-    private var tint: Color {
-        if window.usedPercent >= 90 {
-            return .red
-        }
-        if window.usedPercent >= 70 {
-            return .orange
-        }
-        return .green
-    }
-
-    private var percentText: String {
-        if window.usedPercent.rounded() == window.usedPercent {
-            return "\(Int(window.usedPercent))%"
-        }
-        return String(format: "%.1f%%", window.usedPercent)
-    }
-
-    private var resetText: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale.current
-        formatter.setLocalizedDateFormatFromTemplate("M d HH:mm")
-        return "\(L("codexLimit.resets")) \(formatter.string(from: window.resetsAt))"
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        // Re-evaluate once a minute so an elapsed window reads as reset.
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            content(now: context.date)
+        }
+    }
+
+    private func content(now: Date) -> some View {
+        let usedPercent = window.effectiveUsedPercent(at: now)
+        let tint = tint(for: usedPercent)
+        let fraction = CGFloat(min(max(usedPercent / 100, 0), 1))
+
+        return VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .firstTextBaseline) {
-                Text(title)
+                Text(codexWindowTitle(minutes: window.windowMinutes))
                     .font(.caption2)
                     .foregroundColor(.secondary)
 
                 Spacer()
 
-                Text(percentText)
+                Text(percentText(usedPercent))
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundColor(tint)
                     .monospacedDigit()
@@ -234,7 +224,7 @@ struct CodexLimitWindowCard: View {
             }
             .frame(height: 6)
 
-            Text(resetText)
+            Text(resetText(now: now))
                 .font(.system(size: 9))
                 .foregroundColor(.secondary)
                 .lineLimit(1)
@@ -245,6 +235,44 @@ struct CodexLimitWindowCard: View {
         .background(Color(nsColor: .controlBackgroundColor))
         .cornerRadius(8)
     }
+
+    private func tint(for usedPercent: Double) -> Color {
+        if usedPercent >= 90 {
+            return .red
+        }
+        if usedPercent >= 70 {
+            return .orange
+        }
+        return .green
+    }
+
+    private func percentText(_ usedPercent: Double) -> String {
+        if usedPercent.rounded() == usedPercent {
+            return "\(Int(usedPercent))%"
+        }
+        return String(format: "%.1f%%", usedPercent)
+    }
+
+    private func resetText(now: Date) -> String {
+        if window.hasReset(at: now) {
+            return L("codexLimit.resetDone")
+        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        formatter.setLocalizedDateFormatFromTemplate("M d HH:mm")
+        return "\(L("codexLimit.resets")) \(formatter.string(from: window.resetsAt))"
+    }
+}
+
+/// "5h limit", "7d limit", … derived from the window length Codex reports.
+func codexWindowTitle(minutes: Int) -> String {
+    if minutes > 0, minutes % 1440 == 0 {
+        return L("codexLimit.windowDays", minutes / 1440)
+    }
+    if minutes > 0, minutes % 60 == 0 {
+        return L("codexLimit.windowHours", minutes / 60)
+    }
+    return L("codexLimit.windowMinutes", minutes)
 }
 
 /// Minimal detail shown on heatmap hover — just date + total
@@ -324,7 +352,7 @@ enum ChartPeriod: String, CaseIterable {
 }
 
 struct DetailContentView: View {
-    @ObservedObject var viewModel: HeatmapViewModel
+    @ObservedObject var viewModel: UsageViewModel
     @State private var period: ChartPeriod = .daily
 
     var body: some View {

@@ -2,19 +2,25 @@ import SwiftUI
 
 @main
 struct TokenJandiApp: App {
-    @StateObject private var viewModel = HeatmapViewModel()
-    @StateObject private var folderAccess = FolderAccessManager()
+    @StateObject private var folderAccess: FolderAccessManager
+    @StateObject private var viewModel: UsageViewModel
     @AppStorage("showMenuBarUsage") private var showMenuBarUsage = true
     @AppStorage("menuBarDisplayMode") private var menuBarDisplayModeRaw = MenuBarDisplayMode.today.rawValue
+
+    init() {
+        // Folder access must exist before the first load so the sandboxed app reads
+        // the bookmarked folder instead of its own container.
+        let folderAccess = FolderAccessManager()
+        _folderAccess = StateObject(wrappedValue: folderAccess)
+        _viewModel = StateObject(wrappedValue: UsageViewModel(folderAccess: folderAccess))
+    }
 
     var body: some Scene {
         MenuBarExtra {
             MenuBarPopoverView(viewModel: viewModel, folderAccess: folderAccess)
                 .onAppear {
-                    if viewModel.folderAccessManager == nil {
-                        viewModel.folderAccessManager = folderAccess
-                        viewModel.loadData(force: true)
-                    }
+                    // Cheap when nothing changed: only file metadata is compared.
+                    viewModel.loadData()
                 }
         } label: {
             HStack(spacing: 5) {
@@ -27,10 +33,6 @@ struct TokenJandiApp: App {
             }
         }
         .menuBarExtraStyle(.window)
-        .onChange(of: folderAccess.hasAccess) {
-            viewModel.folderAccessManager = folderAccess
-            viewModel.loadData(force: true)
-        }
     }
 
     private var menuBarDisplayMode: MenuBarDisplayMode {
@@ -38,13 +40,13 @@ struct TokenJandiApp: App {
     }
 
     private var menuBarText: String? {
-        guard showMenuBarUsage, viewModel.hasClaudeData else { return nil }
+        guard showMenuBarUsage, viewModel.hasUsageData else { return nil }
 
         switch menuBarDisplayMode {
         case .today:
-            return viewModel.allSourcesTodayUsage?.totalTokensFormatted ?? "0"
+            return formatTokenCount(viewModel.todayTokens(for: .all))
         case .thisWeek:
-            return formatTokenCount(viewModel.weeklyTokenTotal(for: .all))
+            return formatTokenCount(viewModel.last7DaysTokens(for: .all))
         case .claudeToday:
             return formatTokenCount(viewModel.todayTokens(for: .claude))
         case .codexToday:

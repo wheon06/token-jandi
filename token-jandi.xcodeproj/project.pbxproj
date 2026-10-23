@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		31545F332F7F48AE0061208D /* token-jandi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "token-jandi.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7A11E57E0000000000000002 /* token-jandiTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "token-jandiTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -29,10 +30,22 @@
 			path = "token-jandi";
 			sourceTree = "<group>";
 		};
+		7A11E57E0000000000000003 /* token-jandiTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "token-jandiTests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		31545F302F7F48AE0061208D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7A11E57E0000000000000005 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -46,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				31545F352F7F48AE0061208D /* token-jandi */,
+				7A11E57E0000000000000003 /* token-jandiTests */,
 				31545F342F7F48AE0061208D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				31545F332F7F48AE0061208D /* token-jandi.app */,
+				7A11E57E0000000000000002 /* token-jandiTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -83,6 +98,29 @@
 			productReference = 31545F332F7F48AE0061208D /* token-jandi.app */;
 			productType = "com.apple.product-type.application";
 		};
+		7A11E57E0000000000000001 /* token-jandiTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7A11E57E0000000000000007 /* Build configuration list for PBXNativeTarget "token-jandiTests" */;
+			buildPhases = (
+				7A11E57E0000000000000004 /* Sources */,
+				7A11E57E0000000000000005 /* Frameworks */,
+				7A11E57E0000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7A11E57E0000000000000021 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7A11E57E0000000000000003 /* token-jandiTests */,
+			);
+			name = "token-jandiTests";
+			packageProductDependencies = (
+			);
+			productName = "token-jandiTests";
+			productReference = 7A11E57E0000000000000002 /* token-jandiTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -95,6 +133,10 @@
 				TargetAttributes = {
 					31545F322F7F48AE0061208D = {
 						CreatedOnToolsVersion = 26.1;
+					};
+					7A11E57E0000000000000001 = {
+						CreatedOnToolsVersion = 26.1;
+						TestTargetID = 31545F322F7F48AE0061208D;
 					};
 				};
 			};
@@ -114,12 +156,20 @@
 			projectRoot = "";
 			targets = (
 				31545F322F7F48AE0061208D /* token-jandi */,
+				7A11E57E0000000000000001 /* token-jandiTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		31545F312F7F48AE0061208D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7A11E57E0000000000000006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -136,7 +186,32 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7A11E57E0000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		7A11E57E0000000000000022 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 31545F2B2F7F48AE0061208D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 31545F322F7F48AE0061208D;
+			remoteInfo = "token-jandi";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		7A11E57E0000000000000021 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 31545F322F7F48AE0061208D /* token-jandi */;
+			targetProxy = 7A11E57E0000000000000022 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		31545F3C2F7F48AF0061208D /* Debug */ = {
@@ -388,7 +463,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 8ZJ7CHXMW2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -415,7 +490,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.2;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.heeyeonlee.token-jandi";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -436,7 +511,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 8ZJ7CHXMW2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -463,7 +538,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.2;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.heeyeonlee.token-jandi";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -484,7 +559,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 8ZJ7CHXMW2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -511,7 +586,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.2;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.heeyeonlee.token-jandi";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -533,7 +608,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 8ZJ7CHXMW2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -560,7 +635,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.2;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.heeyeonlee.token-jandi";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -573,6 +648,86 @@
 				SWIFT_VERSION = 5.0;
 			};
 			name = "AppStore Release";
+		};
+		7A11E57E0000000000000011 /* AppStore Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = 8ZJ7CHXMW2;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.heeyeonlee.token-jandiTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/token-jandi.app/Contents/MacOS/token-jandi";
+			};
+			name = "AppStore Debug";
+		};
+		7A11E57E0000000000000012 /* AppStore Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = 8ZJ7CHXMW2;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.heeyeonlee.token-jandiTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/token-jandi.app/Contents/MacOS/token-jandi";
+			};
+			name = "AppStore Release";
+		};
+		7A11E57E0000000000000013 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = 8ZJ7CHXMW2;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.heeyeonlee.token-jandiTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/token-jandi.app/Contents/MacOS/token-jandi";
+			};
+			name = Debug;
+		};
+		7A11E57E0000000000000014 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = 8ZJ7CHXMW2;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.heeyeonlee.token-jandiTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/token-jandi.app/Contents/MacOS/token-jandi";
+			};
+			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
@@ -595,6 +750,17 @@
 				31545F652F7F48AF0061208D /* AppStore Release */,
 				31545F3F2F7F48AF0061208D /* Debug */,
 				31545F402F7F48AF0061208D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7A11E57E0000000000000007 /* Build configuration list for PBXNativeTarget "token-jandiTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A11E57E0000000000000011 /* AppStore Debug */,
+				7A11E57E0000000000000012 /* AppStore Release */,
+				7A11E57E0000000000000013 /* Debug */,
+				7A11E57E0000000000000014 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,31 +1,28 @@
-// MARK: - Header
-"app.title" = "Token Jandi";
-
 // MARK: - Stats
 "stats.today" = "Today";
-"stats.thisWeek" = "This Week";
+"stats.last7Days" = "Last 7 days";
 "stats.streak" = "Streak";
 "stats.total" = "Total";
-"stats.messages" = "messages";
 "stats.tokens" = "tokens";
 "stats.days" = "days";
 
+// MARK: - Sources
+"source.all" = "All";
+"source.claude" = "Claude";
+"source.codex" = "Codex";
+
 // MARK: - Codex Limits
 "codexLimit.title" = "Codex limits";
-"codexLimit.primary" = "5h limit";
-"codexLimit.secondary" = "7d limit";
+"codexLimit.windowMinutes" = "%dm limit";
+"codexLimit.windowHours" = "%dh limit";
+"codexLimit.windowDays" = "%dd limit";
 "codexLimit.resets" = "Resets";
+"codexLimit.resetDone" = "Window reset";
 
 // MARK: - Heatmap
 "heatmap.less" = "Less";
 "heatmap.more" = "More";
 "heatmap.noUsage" = "No usage";
-
-// MARK: - Detail
-"detail.messages" = "messages";
-"detail.tokens" = "tokens";
-"detail.tools" = "tools";
-"detail.selectDay" = "Hover a cell to see details";
 
 // MARK: - Chart
 "chart.daily" = "Daily";
@@ -41,21 +38,34 @@
 "action.refreshing" = "Refreshing data";
 "action.quit" = "Quit";
 
-// MARK: - Loading
+// MARK: - Loading / Empty
 "loading.title" = "Checking data";
 "loading.message" = "Checking Claude and Codex logs.";
+"empty.title" = "No Claude Code or Codex data found";
+"empty.message" = "Select your home folder to start tracking.\nThe app will automatically find .claude and .codex data.";
+
+// MARK: - Folder access
+"folder.select" = "Select";
+"folder.message" = "Select your home folder. Token Jandi will automatically find Claude Code and Codex data.";
+"folder.migrationMessage" = "To track Codex usage too, please re-select your home folder (~/) instead of ~/.claude.";
 
 // MARK: - Menu Bar
 "menuBar.today" = "Today";
-"menuBar.thisWeek" = "This week";
+"menuBar.last7Days" = "Last 7 days";
 "menuBar.claudeToday" = "Claude today";
 "menuBar.codexToday" = "Codex today";
 "menuBar.iconOnly" = "Icon only";
 
 // MARK: - Settings
 "settings.menuBarUsage" = "Menu bar display";
+"settings.refreshInterval" = "Auto refresh";
+"refresh.off" = "Off";
+"refresh.minutes" = "%d min";
 "settings.language" = "Language";
 "settings.version" = "Version";
 "settings.author" = "Author";
 "settings.source" = "Data source";
+"settings.migrationHint" = "Re-select home folder to enable Codex tracking";
+"settings.migrationAction" = "Re-select";
 "settings.localDataNotice" = "Usage is based only on local files from this Mac, so multi-device account usage may be incomplete.";
+"settings.privacy" = "Privacy Policy";
