@@ -179,6 +179,33 @@ final class UsageLogParserTests: XCTestCase {
         XCTAssertEqual(day.sourceBreakdown[.codex]?.cacheReadTokens, 500)
     }
 
+    /// Codex also compresses rollouts in place under `sessions/`. Those must be
+    /// decoded exactly instead of falling back to the thread database estimate.
+    func testCompressedCodexSessionLeftInSessionsFolderIsParsed() throws {
+        let threadID = "11111111-2222-3333-4444-555555555555"
+        let lines = [
+            codexTokenCount(at: "2026-03-01T07:00:00.000Z", lastInput: 1000, lastCached: 0, lastOutput: 50, total: 1050),
+        ]
+        let compressed = try ZstdDecompressor.compress(Data((lines.joined(separator: "\n") + "\n").utf8))
+        try writeData(compressed, at: root.appendingPathComponent(
+            ".codex/sessions/2026/03/01/rollout-2026-03-01T07-00-00-\(threadID).jsonl.zst"))
+
+        let createdAt = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-02-01T05:00:00Z"))
+        try writeThreadDatabase(version: 5, rows: [
+            (id: threadID, tokens: 999_999, createdAt: createdAt, archived: 0),
+        ])
+
+        let parser = parser()
+        XCTAssertEqual(parser.logFiles().filter { $0.kind == .codexSession }.count, 1)
+
+        let report = parser.parseUsageReport()
+        XCTAssertNil(report.codexDatabaseFallback)
+        XCTAssertNil(report.dailyUsage[calendar.startOfDay(for: createdAt)])
+
+        let day = try XCTUnwrap(report.dailyUsage[dayOf("2026-03-01T07:00:00.000Z")])
+        XCTAssertEqual(day.sourceBreakdown[.codex]?.totalTokens, 1050)
+    }
+
     func testJSONLineReaderHandlesLinesSplitAcrossChunks() {
         let text = "{\"a\":1}\n{\"b\":2}\n{\"c\":3}"
         let data = Data(text.utf8)

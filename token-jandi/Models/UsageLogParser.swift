@@ -32,7 +32,7 @@ nonisolated struct UsageLogParser {
         codexDirURL.appendingPathComponent("sessions")
     }
 
-    /// Codex compresses old rollouts into `archived_sessions/*.jsonl.zst`.
+    /// Codex moves archived rollouts here, usually as `*.jsonl.zst`.
     var codexArchivedSessionsDirURL: URL {
         codexDirURL.appendingPathComponent("archived_sessions")
     }
@@ -66,10 +66,10 @@ nonisolated struct UsageLogParser {
         files += jsonlFiles(under: claudeProjectsDirURL).compactMap {
             LogFileFingerprint(url: $0, kind: .claudeSession)
         }
-        files += jsonlFiles(under: codexSessionsDirURL).compactMap {
+        files += codexRolloutFiles(under: codexSessionsDirURL).compactMap {
             LogFileFingerprint(url: $0, kind: .codexSession)
         }
-        files += archivedCodexFiles().compactMap {
+        files += codexRolloutFiles(under: codexArchivedSessionsDirURL).compactMap {
             LogFileFingerprint(url: $0, kind: .codexArchivedSession)
         }
         if let databaseURL = codexThreadDatabaseURL,
@@ -115,10 +115,7 @@ nonisolated struct UsageLogParser {
         case .claudeSession:
             guard let data = try? Data(contentsOf: url) else { return ParsedLogFile() }
             return parseClaudeSession(data)
-        case .codexSession:
-            guard let data = try? Data(contentsOf: url) else { return ParsedLogFile() }
-            return parseCodexSession(data)
-        case .codexArchivedSession:
+        case .codexSession, .codexArchivedSession:
             if url.pathExtension == "zst" {
                 return parseCompressedCodexSession(at: url)
             }
@@ -266,9 +263,12 @@ nonisolated struct UsageLogParser {
         }
     }
 
-    private func archivedCodexFiles() -> [URL] {
+    /// Codex rollouts, plain or zstd-compressed. Codex compresses old rollouts
+    /// either in place under `sessions/` or after moving them to
+    /// `archived_sessions/`, so both trees can hold both forms.
+    private func codexRolloutFiles(under directoryURL: URL) -> [URL] {
         guard let enumerator = FileManager.default.enumerator(
-            at: codexArchivedSessionsDirURL,
+            at: directoryURL,
             includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey, .isRegularFileKey],
             options: [.skipsPackageDescendants]
         ) else { return [] }
