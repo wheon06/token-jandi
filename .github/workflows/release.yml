@@ -1,0 +1,37 @@
+name: Release
+
+# Publishes the GitHub release when scripts/release.sh pushes a version tag.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the tag matches the app version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          app_version=$(sed -n 's/.*MARKETING_VERSION = \(.*\);/\1/p' token-jandi.xcodeproj/project.pbxproj | sort -u)
+          if [ "${app_version}" != "${version}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match the app version (${app_version})"
+            exit 1
+          fi
+
+      - name: Create the release from RELEASE_NOTES.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          scripts/release-notes.sh "${version}" > notes.md
+          printf '\n[Download on the Mac App Store](https://apps.apple.com/app/token-jandi/id6761585375)\n' >> notes.md
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Token Jandi ${version}" \
+            --notes-file notes.md \
+            --verify-tag

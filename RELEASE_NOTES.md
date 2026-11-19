@@ -1,5 +1,14 @@
 # Release Notes
 
+## 1.4.1 (Build 11)
+
+- Fixed Codex sessions that Codex compressed in place under `sessions/` (`*.jsonl.zst`) being counted only from the thread database estimate and attributed to the day the thread started. They are now decoded and counted exactly, like the ones in `archived_sessions/`.
+- Decluttered the popover: the summary under today's usage is now three plain numbers (Last 7 days, Streak, Total), and the hint and helper sentences are gone. The heatmap shows today until a day is hovered, and the chart shows the latest bar until one is hovered.
+- When the total includes Codex threads counted from the thread database, it is marked with a "+" (for example "1.2B+"); hovering it explains why.
+- Simplified Settings: no section titles or row icons, and version, privacy policy and quit share one line. The local-data and Claude limits explanations moved into tooltips.
+- Shortened the loading and empty states.
+- Added `scripts/release.sh`, which ships one version to App Store Connect and GitHub, and a workflow that publishes the GitHub release from these notes.
+
 ## 1.4.0 (Build 10)
 
 - Counted Codex sessions that Codex has archived (`archived_sessions/*.jsonl.zst`, decoded with zstd) and, for threads whose rollout file was deleted, their totals from Codex's thread database (`state_<n>.sqlite`). Those database-only threads are attributed to the day the thread started and flagged in the app as a possible undercount.

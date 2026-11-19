@@ -15,13 +15,12 @@ Check your Claude Code and Codex token usage easily from the macOS status bar.
 ## Preview 👀
 ![](./.github/images/preview.png)
 
-## What's New in 1.4.0
+## What's New in 1.4.1
 
-- Claude Code tokens are no longer counted twice, and subagent sessions are included.
-- Codex archived sessions (`.jsonl.zst`) and threads whose logs were deleted are now counted too.
-- Claude 5h / 7d limit cards, turned on with one switch in Settings → Claude limits.
-- Codex limit cards show the real window length (5h, 7d, …) and reset state.
-- Usage shows in the menu bar right after launch, and refreshes only re-read changed log files.
+- Codex sessions compressed in place under `sessions/` are now counted exactly instead of estimated.
+- A calmer popover: three plain numbers under today's usage, no helper sentences.
+- A total that includes estimated Codex threads is marked with "+"; hover it for details.
+- Simpler Settings, with explanations moved into tooltips.
 
 See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for the full list.
 
@@ -43,6 +42,14 @@ Claude Code hands its 5-hour / 7-day usage (`rate_limits`) only to the [status l
 ```bash
 xcodebuild test -project token-jandi.xcodeproj -scheme token-jandi -destination 'platform=macOS'
 ```
+
+## Releasing
+
+```bash
+scripts/release.sh 1.4.1
+```
+
+Sets the version, runs the tests, uploads the Mac App Store build to App Store Connect, then tags `v1.4.1` and pushes it. The tag triggers a workflow that publishes the GitHub release from `RELEASE_NOTES.md`, so the App Store, the tag and the release always carry the same version. Write the version's section in `RELEASE_NOTES.md` and update "What's New" above first.
 
 ## Install
 
