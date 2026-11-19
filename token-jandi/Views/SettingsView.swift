@@ -10,8 +10,8 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.groupSpacing) {
-            SectionGroup(L("settings.section.display")) {
-                SettingRow(title: L("settings.menuBarUsage"), icon: "menubar.rectangle") {
+            SectionGroup {
+                SettingRow(title: L("settings.menuBarUsage")) {
                     Picker("", selection: menuBarDisplayModeBinding) {
                         ForEach(MenuBarDisplayMode.allCases) { mode in
                             Text(mode.title).tag(mode)
@@ -21,7 +21,7 @@ struct SettingsView: View {
                     .frame(width: 140)
                 }
 
-                SettingRow(title: L("settings.refreshInterval"), icon: "arrow.clockwise") {
+                SettingRow(title: L("settings.refreshInterval")) {
                     Picker("", selection: $viewModel.refreshIntervalRaw) {
                         ForEach(RefreshInterval.allCases) { interval in
                             Text(interval.label).tag(interval.rawValue)
@@ -31,7 +31,7 @@ struct SettingsView: View {
                     .frame(width: 140)
                 }
 
-                SettingRow(title: L("settings.language"), icon: "globe") {
+                SettingRow(title: L("settings.language")) {
                     Picker("", selection: $localization.selectedLanguage) {
                         ForEach(AppLanguage.allCases) { lang in
                             Text(lang.displayName).tag(lang)
@@ -42,8 +42,8 @@ struct SettingsView: View {
                 }
             }
 
-            SectionGroup(L("settings.section.data")) {
-                SettingRow(title: L("settings.source"), icon: "folder") {
+            SectionGroup {
+                SettingRow(title: L("settings.source")) {
                     Text(folderAccess.displayPath)
                         .font(Theme.body)
                         .foregroundColor(.secondary)
@@ -56,6 +56,7 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                     .foregroundColor(.secondary)
                 }
+                .help(L("settings.localDataNotice"))
 
                 if folderAccess.needsMigration {
                     HStack {
@@ -71,38 +72,22 @@ struct SettingsView: View {
 
                 ClaudeBridgeRow(viewModel: viewModel, bridge: bridge, localization: localization)
 
-                Text(L("settings.localDataNotice"))
+            }
+
+            // Version, privacy and quit share one quiet line.
+            HStack(spacing: 10) {
+                Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
                     .font(Theme.caption)
                     .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            SectionGroup(L("settings.section.about")) {
-                SettingRow(title: L("settings.version"), icon: "info.circle") {
-                    Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
-                        .font(Theme.body)
-                        .foregroundColor(.secondary)
-                }
-                SettingRow(title: L("settings.author"), icon: "person") {
-                    Text("Heeyeon Lee")
-                        .font(Theme.body)
-                        .foregroundColor(.secondary)
-                }
-                SettingRow(title: L("settings.privacy"), icon: "hand.raised") {
-                    Button(action: {
-                        if let url = URL(string: "https://github.com/wheon06/token-jandi/blob/main/PRIVACY.md") {
-                            NSWorkspace.shared.open(url)
-                        }
-                    }) {
-                        Image(systemName: "arrow.up.right")
-                            .font(Theme.body)
+                Button(L("settings.privacy")) {
+                    if let url = URL(string: "https://github.com/wheon06/token-jandi/blob/main/PRIVACY.md") {
+                        NSWorkspace.shared.open(url)
                     }
-                    .buttonStyle(.plain)
-                    .foregroundColor(.secondary)
                 }
-            }
+                .buttonStyle(.plain)
+                .font(Theme.caption)
+                .foregroundColor(.secondary)
 
-            HStack {
                 Spacer()
                 Button(L("action.quit")) { NSApplication.shared.terminate(nil) }
                     .buttonStyle(.plain)
@@ -138,11 +123,7 @@ struct ClaudeBridgeRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            SettingRow(title: L("settings.claudeBridge"), icon: "gauge.with.needle") {
-                Image(systemName: "questionmark.circle")
-                    .font(Theme.caption)
-                    .foregroundColor(.secondary)
-                    .help(L("settings.claudeBridge.help"))
+            SettingRow(title: L("settings.claudeBridge")) {
                 Toggle("", isOn: Binding(
                     get: { bridge.isInstalled },
                     set: { bridge.setEnabled($0) }
@@ -152,6 +133,7 @@ struct ClaudeBridgeRow: View {
                 .labelsHidden()
                 .disabled(!bridge.isAvailable)
             }
+            .help(L(bridge.isAvailable ? "settings.claudeBridge.help" : "settings.claudeBridge.notAvailable"))
 
             if let caption {
                 Text(caption.text)
@@ -159,7 +141,6 @@ struct ClaudeBridgeRow: View {
                     .foregroundColor(caption.color)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 24)
             }
         }
         .onAppear { bridge.refresh() }
@@ -170,16 +151,10 @@ struct ClaudeBridgeRow: View {
         if let errorMessage = bridge.errorMessage {
             return (errorMessage, .red)
         }
-        if !bridge.isAvailable {
-            return (L("settings.claudeBridge.notAvailable"), .secondary)
-        }
-        guard bridge.isInstalled else { return nil }
-        guard let status = viewModel.claudeRateLimitStatus else {
+        // Connected needs no words: the switch is on and the cards are there.
+        if bridge.isInstalled, viewModel.claudeRateLimitStatus == nil {
             return (L("settings.claudeBridge.waiting"), .secondary)
         }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.locale = localization.locale
-        formatter.unitsStyle = .short
-        return (L("settings.claudeBridge.connected", formatter.localizedString(for: status.capturedAt, relativeTo: Date())), .secondary)
+        return nil
     }
 }

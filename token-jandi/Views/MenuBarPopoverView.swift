@@ -118,42 +118,71 @@ struct HeatmapContentView: View {
     }
 }
 
-/// One big number, then everything else in a quiet line under it.
+/// One big number, then three supporting numbers. No sentences: anything that
+/// needs explaining lives in a tooltip.
 struct UsageHeroView: View {
     @ObservedObject var viewModel: UsageViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text(L("stats.today"))
-                    .font(Theme.caption)
-                    .foregroundColor(.secondary)
-                Spacer()
-                SourceFilter(selection: $viewModel.selectedSource)
-            }
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(L("stats.today"))
+                        .font(Theme.body)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    SourceFilter(selection: $viewModel.selectedSource)
+                }
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(formatTokenCount(viewModel.summaryStats.todayTokens))
                     .font(Theme.hero)
                     .monospacedDigit()
-                Text(L("stats.tokens"))
-                    .font(Theme.body)
-                    .foregroundColor(.secondary)
             }
 
-            Text(summaryLine)
-                .font(Theme.caption)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+            HStack(alignment: .top, spacing: 0) {
+                StatColumn(
+                    label: L("stats.last7Days"),
+                    value: formatTokenCount(viewModel.summaryStats.last7DaysTokens)
+                )
+                StatColumn(
+                    label: L("stats.streak"),
+                    value: "\(viewModel.currentStreak)\(L("stats.daysSuffix"))"
+                )
+                StatColumn(
+                    label: L("stats.total"),
+                    value: formatTokenCount(viewModel.summaryStats.totalTokens) + (estimateNotice == nil ? "" : "+")
+                )
+                .help(estimateNotice ?? "")
+            }
         }
     }
 
-    private var summaryLine: String {
-        [
-            "\(L("stats.last7Days")) \(formatTokenCount(viewModel.summaryStats.last7DaysTokens))",
-            "\(L("stats.streak")) \(viewModel.currentStreak)\(L("stats.daysSuffix"))",
-            "\(L("stats.total")) \(formatTokenCount(viewModel.summaryStats.totalTokens))",
-        ].joined(separator: "  ·  ")
+    /// Set while the totals include Codex threads that only survive in the thread
+    /// database. Those are a lower bound, so the total reads "1.2B+" and the full
+    /// explanation is the tooltip.
+    private var estimateNotice: String? {
+        guard viewModel.selectedSource != .claude,
+              let fallback = viewModel.codexDatabaseFallback,
+              fallback.threadCount > 0 else { return nil }
+        return L("stats.codexEstimate", fallback.threadCount, formatTokenCount(fallback.tokens))
+    }
+}
+
+/// Small gray label over a value; three of these share the row equally.
+struct StatColumn: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(Theme.caption)
+                .foregroundColor(.secondary)
+            Text(value)
+                .font(Theme.stat)
+                .monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -190,7 +219,7 @@ struct LimitsSection: View {
         let offerBridge = showsClaude && claude == nil && bridge.isAvailable && !bridge.isInstalled
 
         if claude?.hasLimits == true || codex?.hasLimits == true || offerBridge {
-            SectionGroup(L("limits.title")) {
+            SectionGroup {
                 if let claude {
                     if let window = claude.fiveHour {
                         LimitRow(name: limitRowName(L("source.claude"), window), window: window)
@@ -203,15 +232,14 @@ struct LimitsSection: View {
                     }
                 } else if offerBridge {
                     HStack {
-                        Text(L("claudeLimit.hint"))
+                        Text(L("settings.claudeBridge"))
                             .font(Theme.body)
-                            .foregroundColor(.secondary)
                         Spacer()
                         Button(L("claudeLimit.hintAction")) { bridge.setEnabled(true) }
                             .font(Theme.caption)
                             .controlSize(.small)
-                            .help(L("claudeLimit.hintHelp"))
                     }
+                    .help(L("claudeLimit.hintHelp"))
                 }
 
                 if let codex {
@@ -384,21 +412,13 @@ struct BarChartView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // The hovered bar's value, or the scale, in the same spot.
+            // The hovered bar's value; the latest bar when nothing is hovered.
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if let index = hoveredIndex, index < data.count {
+                if let index = hoveredIndex ?? data.indices.last, index < data.count {
                     Text(formatTokenCount(data[index].value))
                         .font(Theme.hero)
                         .monospacedDigit()
                     Text(data[index].label)
-                        .font(Theme.body)
-                        .foregroundColor(.secondary)
-                } else {
-                    Text(formatTokenCount(maxValue))
-                        .font(Theme.hero)
-                        .monospacedDigit()
-                        .foregroundColor(.secondary)
-                    Text(L("chart.max"))
                         .font(Theme.body)
                         .foregroundColor(.secondary)
                 }
@@ -443,17 +463,9 @@ struct BarChartView: View {
 
 struct LoadingStateView: View {
     var body: some View {
-        VStack(spacing: 10) {
-            ProgressView()
-                .controlSize(.small)
-            Text(L("loading.title"))
-                .font(Theme.body)
-            Text(L("loading.message"))
-                .font(Theme.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity, minHeight: 180)
+        ProgressView()
+            .controlSize(.small)
+            .frame(maxWidth: .infinity, minHeight: 180)
     }
 }
 
@@ -461,17 +473,12 @@ struct EmptyStateView: View {
     @ObservedObject var folderAccess: FolderAccessManager
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 14) {
             Text(L("empty.title"))
-                .font(Theme.title)
-            Text(L("empty.message"))
-                .font(Theme.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+                .font(Theme.stat)
 
-            Button(L("folder.select")) { folderAccess.requestFolderAccess() }
+            Button(L("empty.action")) { folderAccess.requestFolderAccess() }
                 .controlSize(.regular)
-                .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, minHeight: 160)
     }

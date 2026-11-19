@@ -3,14 +3,8 @@
 "stats.last7Days" = "최근 7일";
 "stats.streak" = "연속";
 "stats.total" = "전체";
-"stats.tokens" = "토큰";
 "stats.daysSuffix" = "일";
-"limits.title" = "제한";
-"heatmap.hover" = "날짜에 마우스를 올리면 상세가 보입니다";
-"chart.max" = "최대";
-"settings.section.display" = "표시";
-"settings.section.data" = "데이터";
-"settings.section.about" = "정보";
+"stats.codexEstimate" = "로그가 삭제된 Codex 스레드 %d개(%@)는 추정치예요. 실제 사용량은 더 많을 수 있어요.";
 
 // MARK: - Sources
 "source.all" = "전체";
@@ -18,8 +12,7 @@
 "source.codex" = "Codex";
 
 // MARK: - Limits
-"claudeLimit.hint" = "Claude 5시간/7일 제한도 여기에 표시";
-"claudeLimit.hintAction" = "연동 켜기";
+"claudeLimit.hintAction" = "켜기";
 "claudeLimit.hintHelp" = "작은 상태줄 브리지를 설치합니다. 자세한 내용은 설정 › Claude 제한";
 "limit.windowMinutes" = "%d분";
 "limit.windowHours" = "%d시간";
@@ -49,10 +42,8 @@
 "action.quit" = "종료";
 
 // MARK: - Loading / Empty
-"loading.title" = "데이터 확인 중";
-"loading.message" = "Claude와 Codex 로그를 확인하고 있습니다.";
-"empty.title" = "아직 Claude Code나 Codex 데이터가 없습니다";
-"empty.message" = "홈 폴더를 선택하면 자동으로\nClaude Code와 Codex 데이터를 찾습니다.";
+"empty.title" = "아직 사용 기록이 없어요";
+"empty.action" = "홈 폴더 선택";
 
 // MARK: - Folder access
 "folder.select" = "선택";
@@ -72,16 +63,13 @@
 "refresh.off" = "끄기";
 "refresh.minutes" = "%d분";
 "settings.language" = "언어";
-"settings.version" = "버전";
-"settings.author" = "제작자";
 "settings.source" = "데이터 소스";
 "settings.migrationHint" = "Codex 추적을 위해 홈 폴더를 다시 선택하세요";
 "settings.migrationAction" = "다시 선택";
-"settings.localDataNotice" = "사용량은 이 Mac의 로컬 파일 기준이라 여러 기기에서 쓴 계정 사용량은 누락될 수 있습니다.";
+"settings.localDataNotice" = "이 Mac의 로컬 파일만 집계해요. 다른 기기에서 쓴 사용량은 포함되지 않아요.";
 "settings.claudeBridge" = "Claude 제한";
-"settings.claudeBridge.connected" = "연동됨 · %@";
 "settings.claudeBridge.notAvailable" = "Claude Code를 찾을 수 없음";
-"settings.claudeBridge.waiting" = "다음 Claude Code 응답 후 표시됩니다";
+"settings.claudeBridge.waiting" = "다음 Claude Code 응답부터 표시돼요";
 "settings.claudeBridge.settingsUnreadable" = "~/.claude/settings.json을 해석할 수 없어 변경하지 않았습니다.";
 "settings.claudeBridge.help" = "Claude Code는 5시간/7일 제한을 상태줄에만 전달합니다. 켜면 작은 브리지 스크립트를 설치하고 ~/.claude/settings.json의 statusLine을 그 스크립트로 바꿉니다. 기존 상태줄은 그대로 이어서 실행되고 settings.json 백업은 ~/.claude/token-jandi에 남으며, 끄면 이전 설정으로 되돌립니다. Pro / Max 플랜에서만 제공됩니다.";
 "settings.claudeBridge.permissionDenied" = "Claude 폴더에 쓰기 권한이 없습니다";

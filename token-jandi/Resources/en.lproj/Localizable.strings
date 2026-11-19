@@ -3,14 +3,8 @@
 "stats.last7Days" = "Last 7 days";
 "stats.streak" = "Streak";
 "stats.total" = "Total";
-"stats.tokens" = "tokens";
 "stats.daysSuffix" = "d";
-"limits.title" = "Limits";
-"heatmap.hover" = "Hover a day for details";
-"chart.max" = "peak";
-"settings.section.display" = "Display";
-"settings.section.data" = "Data";
-"settings.section.about" = "About";
+"stats.codexEstimate" = "%d Codex threads (%@) whose logs were deleted are estimated. Actual usage may be higher.";
 
 // MARK: - Sources
 "source.all" = "All";
@@ -18,7 +12,6 @@
 "source.codex" = "Codex";
 
 // MARK: - Limits
-"claudeLimit.hint" = "Show Claude 5h / 7d limits here";
 "claudeLimit.hintAction" = "Turn on";
 "claudeLimit.hintHelp" = "Installs a small status line bridge; details in Settings › Claude limits";
 "limit.windowMinutes" = "%dm";
@@ -49,10 +42,8 @@
 "action.quit" = "Quit";
 
 // MARK: - Loading / Empty
-"loading.title" = "Checking data";
-"loading.message" = "Checking Claude and Codex logs.";
-"empty.title" = "No Claude Code or Codex data yet";
-"empty.message" = "Select your home folder to start tracking.\nThe app will automatically find .claude and .codex data.";
+"empty.title" = "No usage yet";
+"empty.action" = "Choose Home Folder";
 
 // MARK: - Folder access
 "folder.select" = "Select";
@@ -72,14 +63,11 @@
 "refresh.off" = "Off";
 "refresh.minutes" = "%d min";
 "settings.language" = "Language";
-"settings.version" = "Version";
-"settings.author" = "Author";
 "settings.source" = "Data source";
 "settings.migrationHint" = "Re-select home folder to enable Codex tracking";
 "settings.migrationAction" = "Re-select";
-"settings.localDataNotice" = "Usage is based only on local files from this Mac, so multi-device account usage may be incomplete.";
+"settings.localDataNotice" = "Counts only local files on this Mac. Usage from other devices is not included.";
 "settings.claudeBridge" = "Claude limits";
-"settings.claudeBridge.connected" = "Connected · %@";
 "settings.claudeBridge.notAvailable" = "Claude Code not found";
 "settings.claudeBridge.waiting" = "Shows after the next Claude Code response";
 "settings.claudeBridge.settingsUnreadable" = "~/.claude/settings.json could not be parsed, so it was left untouched.";

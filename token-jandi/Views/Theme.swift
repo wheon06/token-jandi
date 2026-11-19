@@ -9,9 +9,11 @@ enum Theme {
     static let padding: CGFloat = 16
     static let groupSpacing: CGFloat = 18
     static let rowSpacing: CGFloat = 10
-    static let cornerRadius: CGFloat = 10
+    static let cornerRadius: CGFloat = 12
 
-    static let hero = Font.system(size: 34, weight: .semibold, design: .rounded)
+    static let hero = Font.system(size: 38, weight: .bold, design: .rounded)
+    /// Supporting numbers under the hero.
+    static let stat = Font.system(size: 15, weight: .semibold, design: .rounded)
     static let title = Font.system(size: 12, weight: .semibold)
     static let body = Font.system(size: 12)
     static let caption = Font.system(size: 11)
@@ -57,18 +59,13 @@ struct SectionGroup<Content: View>: View {
     }
 }
 
-/// Label on the left, control on the right. Icons share one width so labels align.
+/// Label on the left, control on the right.
 struct SettingRow<Trailing: View>: View {
     let title: String
-    let icon: String
     @ViewBuilder let trailing: () -> Trailing
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(Theme.body)
-                .foregroundColor(.secondary)
-                .frame(width: 16)
             Text(title)
                 .font(Theme.body)
             Spacer(minLength: 8)

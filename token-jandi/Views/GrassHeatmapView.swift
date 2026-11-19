@@ -67,15 +67,12 @@ struct GrassHeatmapView: View {
 
             // One line: hovered day on the left, legend on the right.
             HStack(alignment: .firstTextBaseline) {
-                if let cell = viewModel.selectedCell {
+                // Today until a day is hovered, so the line never has to explain itself.
+                if let cell = viewModel.selectedCell ?? viewModel.cells.last {
                     Text(detailLine(for: cell))
                         .font(Theme.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
-                } else {
-                    Text(L("heatmap.hover"))
-                        .font(Theme.caption)
-                        .foregroundColor(.secondary)
                 }
 
                 Spacer()

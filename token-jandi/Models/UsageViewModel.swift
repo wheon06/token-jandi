@@ -27,6 +27,9 @@ class UsageViewModel: ObservableObject {
     @Published private(set) var hasUsageData = false
     @Published private(set) var codexRateLimitStatus: CodexRateLimitStatus?
     @Published private(set) var claudeRateLimitStatus: ClaudeRateLimitStatus?
+    /// Codex threads counted from the thread database because their logs are gone;
+    /// their totals are a lower bound, so the UI marks them as an estimate.
+    @Published private(set) var codexDatabaseFallback: CodexDatabaseFallback?
     @Published private(set) var summaryStats = UsageSummaryStats()
     @Published private(set) var isRefreshing = false
     @Published var selectedSource: UsageSourceFilter = .all {
@@ -112,6 +115,7 @@ class UsageViewModel: ObservableObject {
         dailyUsage = snapshot.report.dailyUsage
         codexRateLimitStatus = snapshot.report.codexRateLimitStatus
         claudeRateLimitStatus = snapshot.report.claudeRateLimitStatus
+        codexDatabaseFallback = snapshot.report.codexDatabaseFallback
         hasUsageData = snapshot.hasAnyDataSource
             && dailyUsage.values.contains { $0.totals.hasUsage }
         rebuildDerivedData()
