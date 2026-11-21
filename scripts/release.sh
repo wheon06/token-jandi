@@ -4,7 +4,8 @@
 #   1. sets the app version (and the next build number) in the Xcode project
 #   2. runs the unit tests
 #   3. archives the Mac App Store build and uploads it to App Store Connect
-#   4. tags v<version> and pushes main and the tag to GitHub
+#   4. submits the build for App Store review (needs an API key, see below)
+#   5. tags v<version> and pushes main and the tag to GitHub
 #
 # Pushing the tag triggers .github/workflows/release.yml, which publishes the
 # GitHub release from the version's section in RELEASE_NOTES.md.
@@ -13,16 +14,33 @@
 #   scripts/release.sh 1.4.1
 #   scripts/release.sh 1.4.1 --skip-upload   # the build is already on App Store Connect
 #
-# Before running: write the "## <version>" section in RELEASE_NOTES.md and update
-# "What's New in <version>" in README.md, commit, and be on a clean main.
+# Before running: write the "## <version>" section in RELEASE_NOTES.md, update
+# "What's New in <version>" in README.md and the App Store texts in
+# store/whats-new/, commit, and be on a clean main.
 #
-# The upload signs with the Apple account signed in to Xcode. To use an App Store
-# Connect API key instead, set ASC_KEY_PATH, ASC_KEY_ID and ASC_ISSUER_ID.
+# App Store Connect API key (App Manager role): put these three lines in
+# ~/.config/token-jandi/release.env, or export them:
 #
-# Submitting the uploaded build for review is still done in App Store Connect.
+#   ASC_KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_XXXXXXXXXX.p8
+#   ASC_KEY_ID=XXXXXXXXXX
+#   ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+#
+# With the key, the build is signed, uploaded and submitted for review. Without
+# it, the upload uses the Apple account signed in to Xcode and the submission is
+# left to do by hand in App Store Connect.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+RELEASE_ENV="${HOME}/.config/token-jandi/release.env"
+if [ -f "${RELEASE_ENV}" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    . "${RELEASE_ENV}"
+    set +a
+fi
+ASC_KEY_PATH="${ASC_KEY_PATH:-}"
+ASC_KEY_PATH="${ASC_KEY_PATH/#\~/${HOME}}"
 
 SCHEME="token-jandi"
 PROJECT="token-jandi.xcodeproj"
@@ -69,6 +87,15 @@ if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; t
 fi
 scripts/release-notes.sh "${VERSION}" >/dev/null
 grep -q "What's New in ${VERSION}" README.md || die "README.md has no \"What's New in ${VERSION}\" section"
+if [ -n "${ASC_KEY_PATH:-}" ]; then
+    [ -f "${ASC_KEY_PATH}" ] || die "API key file not found: ${ASC_KEY_PATH}"
+    : "${ASC_KEY_ID:?set ASC_KEY_ID}" "${ASC_ISSUER_ID:?set ASC_ISSUER_ID}"
+    # The App Store text is per release; refuse to resubmit the previous one.
+    PREVIOUS_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+    if [ -n "${PREVIOUS_TAG}" ] && git diff --quiet "${PREVIOUS_TAG}" -- store/whats-new; then
+        die "store/whats-new still has the text from ${PREVIOUS_TAG}; write this version's"
+    fi
+fi
 
 # 2. Version: every target gets the same version; the build number goes up by one.
 if [ "$(project_setting MARKETING_VERSION)" != "${VERSION}" ]; then
@@ -100,8 +127,8 @@ else
     AUTH=(-allowProvisioningUpdates)
     if [ -n "${ASC_KEY_PATH:-}" ]; then
         AUTH+=(-authenticationKeyPath "${ASC_KEY_PATH}"
-               -authenticationKeyID "${ASC_KEY_ID:?set ASC_KEY_ID}"
-               -authenticationKeyIssuerID "${ASC_ISSUER_ID:?set ASC_ISSUER_ID}")
+               -authenticationKeyID "${ASC_KEY_ID}"
+               -authenticationKeyIssuerID "${ASC_ISSUER_ID}")
     fi
 
     step "Archiving for the Mac App Store"
@@ -138,11 +165,21 @@ PLIST
         "${AUTH[@]}"
 fi
 
-# 5. GitHub: only after the App Store has the build, so the versions never drift.
+# 5. Review
+if [ -n "${ASC_KEY_PATH:-}" ]; then
+    step "Submitting ${VERSION} (${BUILD}) for App Store review"
+    scripts/asc-submit.py "${VERSION}" "${BUILD}" \
+        || die "submission failed; nothing was tagged or pushed. Fix it and run: scripts/release.sh ${VERSION} --skip-upload"
+    REVIEW_STATUS="submitted for review"
+else
+    REVIEW_STATUS="uploaded; no API key, so submit it for review at https://appstoreconnect.apple.com"
+fi
+
+# 6. GitHub: only after the App Store has the build, so the versions never drift.
 step "Tagging ${TAG} and pushing to GitHub"
 git tag -a "${TAG}" -m "Token Jandi ${VERSION}"
 git push origin main "${TAG}"
 
 step "Done"
-echo "App Store Connect: build ${VERSION} (${BUILD}) uploaded; submit it for review at https://appstoreconnect.apple.com"
+echo "App Store Connect: build ${VERSION} (${BUILD}) ${REVIEW_STATUS}"
 echo "GitHub release:    https://github.com/wheon06/token-jandi/releases/tag/${TAG} (published by the Release workflow)"

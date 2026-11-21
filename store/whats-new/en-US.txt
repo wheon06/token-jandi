@@ -1,0 +1,4 @@
+• Codex sessions that were compressed in place under the sessions folder are now counted exactly. They used to be estimated and piled onto a single day.
+• A calmer popover: just Last 7 days, Streak and Total under today's usage.
+• When the total includes estimated usage, it is marked with a +. Hover it to see why.
+• Simpler Settings, with explanations shown only on hover.

@@ -49,7 +49,9 @@ xcodebuild test -project token-jandi.xcodeproj -scheme token-jandi -destination 
 scripts/release.sh 1.4.1
 ```
 
-Sets the version, runs the tests, uploads the Mac App Store build to App Store Connect, then tags `v1.4.1` and pushes it. The tag triggers a workflow that publishes the GitHub release from `RELEASE_NOTES.md`, so the App Store, the tag and the release always carry the same version. Write the version's section in `RELEASE_NOTES.md` and update "What's New" above first.
+Sets the version, runs the tests, uploads the Mac App Store build to App Store Connect, submits it for review, then tags `v1.4.1` and pushes it. The tag triggers a workflow that publishes the GitHub release from `RELEASE_NOTES.md`, so the App Store, the tag and the release always carry the same version.
+
+Before running, write the version's section in `RELEASE_NOTES.md`, update "What's New" above, and write the App Store "What's New" text in `store/whats-new/<locale>.txt`. Submitting for review needs an App Store Connect API key; see the header of `scripts/release.sh`.
 
 ## Install
 

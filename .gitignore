@@ -20,3 +20,6 @@ xcuserdata/
 
 # AI
 .claude/
+
+# Python
+__pycache__/
