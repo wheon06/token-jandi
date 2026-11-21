@@ -441,6 +441,56 @@ final class UsageLogParserTests: XCTestCase {
 
     // MARK: - Formatting
 
+    // MARK: - Plans
+
+    func testClaudePlanNameIsBuiltFromOrganizationTypeAndRateLimitTier() {
+        func name(_ organizationType: String?, _ tier: String?) -> String? {
+            ClaudeAccountPlan(organizationType: organizationType, rateLimitTier: tier).displayName
+        }
+        XCTAssertEqual(name("claude_max", "default_claude_max_5x"), "Max 5x")
+        XCTAssertEqual(name("claude_max", "default_claude_max_20x"), "Max 20x")
+        XCTAssertEqual(name("claude_pro", "default_claude_ai"), "Pro")
+        XCTAssertEqual(name("claude_team", "default_claude_max_5x"), "Team · Max 5x")
+        XCTAssertEqual(name("claude_enterprise", nil), "Enterprise")
+        XCTAssertNil(name(nil, nil))
+        XCTAssertNil(name("something else", "default"), "unrecognized identifiers are not shown")
+    }
+
+    func testClaudePlanIsReadFromTheAccountFileNextToTheClaudeFolder() throws {
+        try writeClaudeSession("session", lines: [claudeLine(id: "m1", requestID: "r1", input: 10, output: 5, cacheRead: 0, cacheCreation: 0)])
+        let account: [String: Any] = [
+            "oauthAccount": [
+                "emailAddress": "someone@example.com",
+                "organizationType": "claude_max",
+                "userRateLimitTier": "default_claude_max_20x",
+            ],
+            "numStartups": 12,
+        ]
+        try writeData(
+            try JSONSerialization.data(withJSONObject: account),
+            at: root.appendingPathComponent(".claude.json")
+        )
+
+        let report = parser().parseUsageReport()
+        XCTAssertEqual(report.claudePlan?.displayName, "Max 20x")
+    }
+
+    func testAccountFileWithoutPlanFieldsIsIgnored() throws {
+        XCTAssertNil(ClaudeAccountPlan.parse(Data(#"{"oauthAccount": {"emailAddress": "someone@example.com"}}"#.utf8)))
+        XCTAssertNil(ClaudeAccountPlan.parse(Data(#"{"numStartups": 3}"#.utf8)))
+        XCTAssertNil(ClaudeAccountPlan.parse(Data("not json".utf8)))
+    }
+
+    func testCodexPlanNameComesFromThePlanType() {
+        XCTAssertEqual(planDisplayWord("team"), "Team")
+        XCTAssertEqual(planDisplayWord("plus"), "Plus")
+        XCTAssertEqual(planDisplayWord("business_plus"), "Business Plus")
+        XCTAssertNil(planDisplayWord(""))
+        XCTAssertNil(planDisplayWord("<script>"))
+    }
+
+    // MARK: - Formatting
+
     func testFormatTokenCount() {
         XCTAssertEqual(formatTokenCount(0), "0")
         XCTAssertEqual(formatTokenCount(999), "999")

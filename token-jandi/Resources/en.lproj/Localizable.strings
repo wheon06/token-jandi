@@ -6,6 +6,14 @@
 "stats.daysSuffix" = "d";
 "stats.codexEstimate" = "%d Codex threads (%@) whose logs were deleted are estimated. Actual usage may be higher.";
 
+// MARK: - Tabs
+"tab.usage" = "Usage";
+"tab.limits" = "Limits";
+"tab.settings" = "Settings";
+"chart.heatmap" = "Grass";
+"limits.connect" = "Show 5h / 7d limits";
+"limits.empty" = "No limit information yet";
+
 // MARK: - Sources
 "source.all" = "All";
 "source.claude" = "Claude";

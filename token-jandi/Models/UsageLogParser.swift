@@ -46,6 +46,12 @@ nonisolated struct UsageLogParser {
         ClaudeStatusLineBridge.fileURL(in: claudeDirURL)
     }
 
+    /// Claude Code's global state file sits next to `.claude`, not inside it.
+    /// Only the plan fields of its `oauthAccount` are used; see `ClaudeAccountPlan`.
+    var claudeAccountURL: URL {
+        claudeDirURL.deletingLastPathComponent().appendingPathComponent(".claude.json")
+    }
+
     var hasAnyDataSource: Bool {
         let fileManager = FileManager.default
         return fileManager.fileExists(atPath: claudeProjectsDirURL.path)
@@ -78,6 +84,9 @@ nonisolated struct UsageLogParser {
         }
         if let statusLine = LogFileFingerprint(url: claudeStatusLineURL, kind: .claudeStatusLine) {
             files.append(statusLine)
+        }
+        if let account = LogFileFingerprint(url: claudeAccountURL, kind: .claudeAccount) {
+            files.append(account)
         }
 
         return files.sorted { $0.path < $1.path }
@@ -128,6 +137,11 @@ nonisolated struct UsageLogParser {
                 data,
                 capturedAt: Date(timeIntervalSince1970: file.modificationTime)
             )
+            return result
+        case .claudeAccount:
+            guard let data = try? Data(contentsOf: url) else { return ParsedLogFile() }
+            var result = ParsedLogFile()
+            result.claudePlan = ClaudeAccountPlan.parse(data)
             return result
         case .codexThreadDatabase:
             // Needs the set of threads covered by log files; see parseCodexThreadDatabase.
@@ -445,6 +459,7 @@ nonisolated struct ParsedLogFile: Equatable {
     var dailyUsage: [Date: DailyUsageData] = [:]
     var codexRateLimitStatus: CodexRateLimitStatus?
     var claudeRateLimitStatus: ClaudeRateLimitStatus?
+    var claudePlan: ClaudeAccountPlan?
     var codexDatabaseFallback: CodexDatabaseFallback?
 
     mutating func add(_ usage: UsageTotals, source: UsageProvider, on day: Date) {
@@ -462,6 +477,7 @@ nonisolated struct UsageParseReport: Equatable {
     var dailyUsage: [Date: DailyUsageData] = [:]
     var codexRateLimitStatus: CodexRateLimitStatus?
     var claudeRateLimitStatus: ClaudeRateLimitStatus?
+    var claudePlan: ClaudeAccountPlan?
     var codexDatabaseFallback: CodexDatabaseFallback?
 
     mutating func merge(_ file: ParsedLogFile) {
@@ -473,6 +489,9 @@ nonisolated struct UsageParseReport: Equatable {
         if let status = file.claudeRateLimitStatus,
            claudeRateLimitStatus.map({ status.capturedAt > $0.capturedAt }) ?? true {
             claudeRateLimitStatus = status
+        }
+        if let plan = file.claudePlan {
+            claudePlan = plan
         }
         if let fallback = file.codexDatabaseFallback {
             var merged = codexDatabaseFallback ?? CodexDatabaseFallback()
@@ -490,13 +509,14 @@ nonisolated struct LogDirectorySignature: Equatable {
 nonisolated enum LogFileKind: Hashable {
     case claudeSession
     case claudeStatusLine
+    case claudeAccount
     case codexSession
     case codexArchivedSession
     case codexThreadDatabase
 
     var source: UsageProvider {
         switch self {
-        case .claudeSession, .claudeStatusLine: return .claude
+        case .claudeSession, .claudeStatusLine, .claudeAccount: return .claude
         case .codexSession, .codexArchivedSession, .codexThreadDatabase: return .codex
         }
     }
@@ -556,5 +576,22 @@ nonisolated struct CodexRateLimitStatus: Equatable {
     var hasLimits: Bool {
         primary != nil || secondary != nil
     }
+
+    /// "Team", "Plus", … from Codex's `plan_type`.
+    var planName: String? {
+        planType.flatMap(planDisplayWord)
+    }
+}
+
+/// Turns a plan identifier such as `team` or `max` into a display word. Anything
+/// that doesn't look like a simple identifier is dropped rather than shown raw.
+nonisolated func planDisplayWord(_ identifier: String) -> String? {
+    let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_"))
+    guard !identifier.isEmpty, identifier.count <= 24,
+          identifier.unicodeScalars.allSatisfy(allowed.contains) else { return nil }
+    return identifier
+        .split(separator: "_")
+        .map { $0.prefix(1).uppercased() + $0.dropFirst() }
+        .joined(separator: " ")
 }
 

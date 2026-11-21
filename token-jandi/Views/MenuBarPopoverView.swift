@@ -1,8 +1,10 @@
 import SwiftUI
 
-enum PopoverTab {
-    case heatmap
-    case detail
+/// Tabs follow the question being asked: how much was used, how much is left,
+/// and how the app behaves.
+enum PopoverTab: String {
+    case usage
+    case limits
     case settings
 }
 
@@ -11,20 +13,26 @@ struct MenuBarPopoverView: View {
     @ObservedObject var folderAccess: FolderAccessManager
     @ObservedObject var localization = LocalizationManager.shared
     @StateObject private var bridge: ClaudeBridgeController
-    @State private var currentTab: PopoverTab = .heatmap
+    @State private var currentTab: PopoverTab
+
+    private static let lastTabKey = "lastPopoverTab"
 
     init(viewModel: UsageViewModel, folderAccess: FolderAccessManager) {
         self.viewModel = viewModel
         self.folderAccess = folderAccess
         _bridge = StateObject(wrappedValue: ClaudeBridgeController(folderAccess: folderAccess))
+        // Reopen on the tab that was being looked at, so limits stay one click away
+        // for people who mostly check those.
+        let saved = UserDefaults.standard.string(forKey: Self.lastTabKey).flatMap(PopoverTab.init(rawValue:))
+        _currentTab = State(initialValue: saved ?? .usage)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.groupSpacing) {
             HStack(spacing: 4) {
-                TabButton(icon: "leaf.fill", isSelected: currentTab == .heatmap) { currentTab = .heatmap }
-                TabButton(icon: "chart.bar.fill", isSelected: currentTab == .detail) { currentTab = .detail }
-                TabButton(icon: "gearshape.fill", isSelected: currentTab == .settings) { currentTab = .settings }
+                TabButton(icon: "leaf.fill", title: L("tab.usage"), isSelected: currentTab == .usage) { select(.usage) }
+                TabButton(icon: "gauge.with.needle", title: L("tab.limits"), isSelected: currentTab == .limits) { select(.limits) }
+                TabButton(icon: "gearshape.fill", title: L("tab.settings"), isSelected: currentTab == .settings) { select(.settings) }
 
                 Spacer()
 
@@ -39,10 +47,10 @@ struct MenuBarPopoverView: View {
                 EmptyStateView(folderAccess: folderAccess)
             } else {
                 switch currentTab {
-                case .heatmap:
-                    HeatmapContentView(viewModel: viewModel, bridge: bridge)
-                case .detail:
-                    DetailContentView(viewModel: viewModel)
+                case .usage:
+                    UsageContentView(viewModel: viewModel)
+                case .limits:
+                    LimitsContentView(viewModel: viewModel, bridge: bridge)
                 case .settings:
                     SettingsView(
                         localization: localization,
@@ -56,6 +64,14 @@ struct MenuBarPopoverView: View {
         .padding(Theme.padding)
         .frame(width: 380)
         .id(localization.selectedLanguage)
+    }
+
+    private func select(_ tab: PopoverTab) {
+        currentTab = tab
+        // Settings is a detour, not a place to come back to.
+        if tab != .settings {
+            UserDefaults.standard.set(tab.rawValue, forKey: Self.lastTabKey)
+        }
     }
 }
 
@@ -85,6 +101,7 @@ struct RefreshButton: View {
 
 struct TabButton: View {
     let icon: String
+    let title: String
     let isSelected: Bool
     let action: () -> Void
 
@@ -98,24 +115,75 @@ struct TabButton: View {
                 .cornerRadius(6)
         }
         .buttonStyle(.plain)
+        .help(title)
+        .accessibilityLabel(title)
     }
 }
 
-// MARK: - Heatmap tab
+// MARK: - Usage tab
 
-struct HeatmapContentView: View {
+/// The same history drawn three ways.
+enum UsageChart: String, CaseIterable {
+    case heatmap
+    case daily
+    case monthly
+
+    var title: String {
+        switch self {
+        case .heatmap: return L("chart.heatmap")
+        case .daily: return L("chart.daily")
+        case .monthly: return L("chart.monthly")
+        }
+    }
+}
+
+struct UsageContentView: View {
     @ObservedObject var viewModel: UsageViewModel
-    @ObservedObject var bridge: ClaudeBridgeController
+    @AppStorage("usageChart") private var chartRaw = UsageChart.heatmap.rawValue
+
+    private var chart: UsageChart {
+        UsageChart(rawValue: chartRaw) ?? .heatmap
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.groupSpacing) {
             UsageHeroView(viewModel: viewModel)
 
-            LimitsSection(viewModel: viewModel, bridge: bridge)
+            VStack(alignment: .leading, spacing: 12) {
+                TextChoices(
+                    options: UsageChart.allCases.map { ($0, $0.title) },
+                    selection: Binding(get: { chart }, set: { chartRaw = $0.rawValue })
+                )
 
-            GrassHeatmapView(viewModel: viewModel)
+                switch chart {
+                case .heatmap:
+                    GrassHeatmapView(viewModel: viewModel)
+                case .daily:
+                    BarChartView(data: viewModel.recentDailyData.map {
+                        (label: dayLabel($0.date), value: $0.tokens, detail: usageDateString($0.date))
+                    })
+                case .monthly:
+                    BarChartView(data: viewModel.monthlyData.map {
+                        (label: $0.label, value: $0.tokens, detail: $0.label)
+                    })
+                }
+            }
         }
     }
+
+    private func dayLabel(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
+    }
+}
+
+/// "11. 20. (Fri)" in the selected language; shared by the heatmap and the chart.
+func usageDateString(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = LocalizationManager.shared.locale
+    formatter.setLocalizedDateFormatFromTemplate("M d EEE")
+    return formatter.string(from: date)
 }
 
 /// One big number, then three supporting numbers. No sentences: anything that
@@ -187,16 +255,22 @@ struct StatColumn: View {
 }
 
 /// Plain text choices; the selected one is simply darker and heavier.
-struct SourceFilter: View {
-    @Binding var selection: UsageSourceFilter
+struct TextChoices<Value: Hashable>: View {
+    let options: [(value: Value, title: String)]
+    @Binding var selection: Value
+
+    init(options: [(Value, String)], selection: Binding<Value>) {
+        self.options = options.map { (value: $0.0, title: $0.1) }
+        _selection = selection
+    }
 
     var body: some View {
         HStack(spacing: 10) {
-            ForEach(UsageSourceFilter.allCases) { source in
-                Button(action: { selection = source }) {
-                    Text(source.title)
-                        .font(.system(size: 11, weight: selection == source ? .semibold : .regular))
-                        .foregroundColor(selection == source ? .primary : .secondary)
+            ForEach(options, id: \.value) { option in
+                Button(action: { selection = option.value }) {
+                    Text(option.title)
+                        .font(.system(size: 11, weight: selection == option.value ? .semibold : .regular))
+                        .foregroundColor(selection == option.value ? .primary : .secondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -204,62 +278,106 @@ struct SourceFilter: View {
     }
 }
 
-// MARK: - Limits
-
-struct LimitsSection: View {
-    @ObservedObject var viewModel: UsageViewModel
-    @ObservedObject var bridge: ClaudeBridgeController
-
-    private var showsClaude: Bool { viewModel.selectedSource != .codex }
-    private var showsCodex: Bool { viewModel.selectedSource != .claude }
+struct SourceFilter: View {
+    @Binding var selection: UsageSourceFilter
 
     var body: some View {
-        let claude = showsClaude ? viewModel.claudeRateLimitStatus : nil
-        let codex = showsCodex ? viewModel.codexRateLimitStatus : nil
-        let offerBridge = showsClaude && claude == nil && bridge.isAvailable && !bridge.isInstalled
-
-        if claude?.hasLimits == true || codex?.hasLimits == true || offerBridge {
-            SectionGroup {
-                if let claude {
-                    if let window = claude.fiveHour {
-                        LimitRow(name: limitRowName(L("source.claude"), window), window: window)
-                    }
-                    if let window = claude.sevenDay {
-                        LimitRow(name: limitRowName(L("source.claude"), window), window: window)
-                    }
-                    if let spend = claude.spendLimit {
-                        SpendLimitRow(spendLimit: spend)
-                    }
-                } else if offerBridge {
-                    HStack {
-                        Text(L("settings.claudeBridge"))
-                            .font(Theme.body)
-                        Spacer()
-                        Button(L("claudeLimit.hintAction")) { bridge.setEnabled(true) }
-                            .font(Theme.caption)
-                            .controlSize(.small)
-                    }
-                    .help(L("claudeLimit.hintHelp"))
-                }
-
-                if let codex {
-                    if let window = codex.primary {
-                        LimitRow(name: limitRowName(L("source.codex"), window), window: window)
-                    }
-                    if let window = codex.secondary {
-                        LimitRow(name: limitRowName(L("source.codex"), window), window: window)
-                    }
-                }
-            }
-        }
-    }
-
-    private func limitRowName(_ provider: String, _ window: RateLimitWindow) -> String {
-        "\(provider) \(limitWindowTitle(minutes: window.windowMinutes))"
+        TextChoices(options: UsageSourceFilter.allCases.map { ($0, $0.title) }, selection: $selection)
     }
 }
 
-/// `Claude 5h   ▮▮▮▯▯▯  23%   10/24 02:00`
+// MARK: - Limits tab
+
+/// One group per agent: its plan in the header, then what is left of each window.
+struct LimitsContentView: View {
+    @ObservedObject var viewModel: UsageViewModel
+    @ObservedObject var bridge: ClaudeBridgeController
+
+    var body: some View {
+        let claude = viewModel.claudeRateLimitStatus
+        let codex = viewModel.codexRateLimitStatus
+        let claudePlan = viewModel.claudePlan?.displayName
+        let codexPlan = codex?.planName
+        let showsClaude = claude?.hasLimits == true || claudePlan != nil || bridge.isAvailable
+        let showsCodex = codex?.hasLimits == true || codexPlan != nil
+
+        VStack(alignment: .leading, spacing: Theme.rowSpacing) {
+            if showsClaude {
+                AgentLimitsGroup(name: L("source.claude"), plan: claudePlan) {
+                    if let claude, claude.hasLimits {
+                        if let window = claude.fiveHour {
+                            LimitRow(name: limitWindowTitle(minutes: window.windowMinutes), window: window)
+                        }
+                        if let window = claude.sevenDay {
+                            LimitRow(name: limitWindowTitle(minutes: window.windowMinutes), window: window)
+                        }
+                        if let spend = claude.spendLimit {
+                            SpendLimitRow(spendLimit: spend)
+                        }
+                    } else if bridge.isInstalled {
+                        Text(L("settings.claudeBridge.waiting"))
+                            .font(Theme.caption)
+                            .foregroundColor(.secondary)
+                    } else if bridge.isAvailable {
+                        HStack {
+                            Text(L("limits.connect"))
+                                .font(Theme.body)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Button(L("claudeLimit.hintAction")) { bridge.setEnabled(true) }
+                                .font(Theme.caption)
+                                .controlSize(.small)
+                        }
+                        .help(L("claudeLimit.hintHelp"))
+                    }
+                }
+            }
+
+            if showsCodex {
+                AgentLimitsGroup(name: L("source.codex"), plan: codexPlan) {
+                    if let window = codex?.primary {
+                        LimitRow(name: limitWindowTitle(minutes: window.windowMinutes), window: window)
+                    }
+                    if let window = codex?.secondary {
+                        LimitRow(name: limitWindowTitle(minutes: window.windowMinutes), window: window)
+                    }
+                }
+            }
+
+            if !showsClaude && !showsCodex {
+                Text(L("limits.empty"))
+                    .font(Theme.body)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 120)
+            }
+        }
+        .onAppear { bridge.refresh() }
+    }
+}
+
+struct AgentLimitsGroup<Content: View>: View {
+    let name: String
+    let plan: String?
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        SectionGroup {
+            HStack(alignment: .firstTextBaseline) {
+                Text(name)
+                    .font(Theme.title)
+                Spacer()
+                if let plan {
+                    Text(plan)
+                        .font(Theme.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            content()
+        }
+    }
+}
+
+/// `5h   ▮▮▮▯▯▯  23%   10/24 02:00`
 struct LimitRow: View {
     let name: String
     let window: RateLimitWindow
@@ -320,7 +438,7 @@ struct LimitRowLayout: View {
             Text(name)
                 .font(Theme.body)
                 .lineLimit(1)
-                .frame(width: 92, alignment: .leading)
+                .frame(width: 64, alignment: .leading)
 
             UsageBar(fraction: fraction)
 
@@ -360,50 +478,10 @@ func limitDateString(_ date: Date) -> String {
     return formatter.string(from: date)
 }
 
-// MARK: - Chart tab
-
-enum ChartPeriod: String, CaseIterable {
-    case daily, monthly
-}
-
-struct DetailContentView: View {
-    @ObservedObject var viewModel: UsageViewModel
-    @State private var period: ChartPeriod = .daily
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Theme.groupSpacing) {
-            HStack {
-                Picker("", selection: $period) {
-                    Text(L("chart.daily")).tag(ChartPeriod.daily)
-                    Text(L("chart.monthly")).tag(ChartPeriod.monthly)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 150)
-
-                Spacer()
-
-                SourceFilter(selection: $viewModel.selectedSource)
-            }
-
-            switch period {
-            case .daily:
-                BarChartView(data: viewModel.recentDailyData.map { (label: dayLabel($0.date), value: $0.tokens) })
-            case .monthly:
-                BarChartView(data: viewModel.monthlyData.map { (label: $0.label, value: $0.tokens) })
-            }
-        }
-    }
-
-    private func dayLabel(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d"
-        return formatter.string(from: date)
-    }
-}
+// MARK: - Bar chart
 
 struct BarChartView: View {
-    let data: [(label: String, value: Int)]
+    let data: [(label: String, value: Int, detail: String)]
     @State private var hoveredIndex: Int? = nil
 
     private var maxValue: Int {
@@ -411,19 +489,7 @@ struct BarChartView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // The hovered bar's value; the latest bar when nothing is hovered.
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if let index = hoveredIndex ?? data.indices.last, index < data.count {
-                    Text(formatTokenCount(data[index].value))
-                        .font(Theme.hero)
-                        .monospacedDigit()
-                    Text(data[index].label)
-                        .font(Theme.body)
-                        .foregroundColor(.secondary)
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .bottom, spacing: 4) {
                 ForEach(Array(data.enumerated()), id: \.offset) { index, item in
                     VStack(spacing: 4) {
@@ -443,7 +509,17 @@ struct BarChartView: View {
                     }
                 }
             }
-            .frame(height: 120)
+            .frame(height: 124, alignment: .bottom)
+
+            // Same place and wording as the line under the heatmap: the hovered
+            // bar, or the latest one.
+            if let index = hoveredIndex ?? data.indices.last, index < data.count {
+                Text("\(data[index].detail) · \(formatTokenCount(data[index].value))")
+                    .font(Theme.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .padding(.top, 2)
+            }
         }
     }
 
@@ -455,7 +531,7 @@ struct BarChartView: View {
 
     private func barHeight(_ value: Int) -> CGFloat {
         guard maxValue > 0 else { return 3 }
-        return max(3, CGFloat(value) / CGFloat(maxValue) * 100)
+        return max(3, CGFloat(value) / CGFloat(maxValue) * 104)
     }
 }
 

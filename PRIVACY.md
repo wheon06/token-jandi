@@ -1,6 +1,6 @@
 # Privacy Policy — Token Jandi
 
-**Last updated:** October 23, 2026
+**Last updated:** November 21, 2026
 
 ## Overview
 
@@ -22,6 +22,8 @@ The app reads the following local files (with your permission):
 - `~/.codex/sessions/**/*.jsonl` and `~/.codex/archived_sessions/*.jsonl.zst` — Codex session logs containing per-request token usage
 - `~/.codex/state_*.sqlite` (read-only) — Codex's thread index, used for threads whose logs were deleted
 - `~/.claude/token-jandi/statusline.json` — Claude Code rate limits, written by the optional status line bridge below
+- `~/.claude.json` — Claude Code's account state. Only your plan (`organizationType` and `userRateLimitTier`) is used, to label the limits. The same file holds your email, name and organization; the app does not display, store or send them
+- The `plan_type` field in Codex session logs — your Codex plan, used the same way
 
 This data never leaves your device.
 

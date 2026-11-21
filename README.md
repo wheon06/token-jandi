@@ -15,12 +15,12 @@ Check your Claude Code and Codex token usage easily from the macOS status bar.
 ## Preview 👀
 ![](./.github/images/preview.png)
 
-## What's New in 1.4.1
+## What's New in 1.5.0
 
-- Codex sessions compressed in place under `sessions/` are now counted exactly instead of estimated.
-- A calmer popover: three plain numbers under today's usage, no helper sentences.
-- A total that includes estimated Codex threads is marked with "+"; hover it for details.
-- Simpler Settings, with explanations moved into tooltips.
+- Tabs split by question: Usage (how much you used) and Limits (how much is left).
+- Heatmap, daily and monthly charts now live together on the Usage tab.
+- The Limits tab shows each agent's plan next to its limits.
+- The popover reopens on the tab you last used.
 
 See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for the full list.
 
@@ -46,10 +46,10 @@ xcodebuild test -project token-jandi.xcodeproj -scheme token-jandi -destination 
 ## Releasing
 
 ```bash
-scripts/release.sh 1.4.1
+scripts/release.sh 1.5.0
 ```
 
-Sets the version, runs the tests, uploads the Mac App Store build to App Store Connect, submits it for review, then tags `v1.4.1` and pushes it. The tag triggers a workflow that publishes the GitHub release from `RELEASE_NOTES.md`, so the App Store, the tag and the release always carry the same version.
+Sets the version, runs the tests, uploads the Mac App Store build to App Store Connect, submits it for review, then tags `v1.5.0` and pushes it. The tag triggers a workflow that publishes the GitHub release from `RELEASE_NOTES.md`, so the App Store, the tag and the release always carry the same version.
 
 Before running, write the version's section in `RELEASE_NOTES.md`, update "What's New" above, and write the App Store "What's New" text in `store/whats-new/<locale>.txt`. Submitting for review needs an App Store Connect API key; see the header of `scripts/release.sh`.
 

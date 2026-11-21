@@ -6,6 +6,14 @@
 "stats.daysSuffix" = "일";
 "stats.codexEstimate" = "로그가 삭제된 Codex 스레드 %d개(%@)는 추정치예요. 실제 사용량은 더 많을 수 있어요.";
 
+// MARK: - Tabs
+"tab.usage" = "사용량";
+"tab.limits" = "한도";
+"tab.settings" = "설정";
+"chart.heatmap" = "잔디";
+"limits.connect" = "5시간 · 7일 한도 보기";
+"limits.empty" = "표시할 한도 정보가 없어요";
+
 // MARK: - Sources
 "source.all" = "전체";
 "source.claude" = "Claude";

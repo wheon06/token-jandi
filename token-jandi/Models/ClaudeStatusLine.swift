@@ -38,6 +38,48 @@ nonisolated struct ClaudeRateLimitStatus: Equatable {
     }
 }
 
+/// The Claude plan, read from the `oauthAccount` object Claude Code keeps in
+/// `~/.claude.json`. That object also holds the account's email, name and
+/// organization; only the two plan fields below are read out of it.
+nonisolated struct ClaudeAccountPlan: Equatable {
+    /// `claude_max`, `claude_pro`, `claude_team`, `claude_enterprise`, …
+    let organizationType: String?
+    /// `default_claude_max_5x`, `default_claude_max_20x`, …
+    let rateLimitTier: String?
+
+    static func parse(_ data: Data) -> ClaudeAccountPlan? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let account = json["oauthAccount"] as? [String: Any] else { return nil }
+
+        let plan = ClaudeAccountPlan(
+            organizationType: account["organizationType"] as? String,
+            rateLimitTier: account["userRateLimitTier"] as? String
+        )
+        return plan.displayName == nil ? nil : plan
+    }
+
+    /// "Max 5x", "Pro", "Team · Max 5x". These identifiers are not a documented
+    /// format, so anything unrecognized is left out instead of guessed at.
+    var displayName: String? {
+        var base: String?
+        if let organizationType, organizationType.hasPrefix("claude_") {
+            base = planDisplayWord(String(organizationType.dropFirst("claude_".count)))
+        }
+
+        var usageTier: String?
+        if let rateLimitTier,
+           let match = rateLimitTier.range(of: #"max_[0-9]+x"#, options: .regularExpression) {
+            usageTier = "Max " + rateLimitTier[match].dropFirst("max_".count)
+        }
+
+        if base == "Max", let usageTier {
+            return usageTier
+        }
+        let parts = [base, usageTier].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+}
+
 /// Claude Code does not log its rate limits anywhere, but it hands them to the
 /// status line script as JSON (`rate_limits.five_hour`, `rate_limits.seven_day`,
 /// `rate_limits.spend_limit`). A tiny bridge script saves that JSON under

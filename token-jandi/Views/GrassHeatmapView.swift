@@ -91,10 +91,7 @@ struct GrassHeatmapView: View {
 
     /// "Oct 22 (Wed) · 33.8M · Claude 30.1M · Codex 3.7M"
     private func detailLine(for cell: DayCell) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = LocalizationManager.shared.locale
-        formatter.setLocalizedDateFormatFromTemplate("M d EEE")
-        var parts = [formatter.string(from: cell.date)]
+        var parts = [usageDateString(cell.date)]
 
         guard let usage = cell.usage else {
             parts.append(L("heatmap.noUsage"))

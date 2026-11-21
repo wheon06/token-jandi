@@ -1,5 +1,12 @@
 # Release Notes
 
+## 1.5.0 (Build 12)
+
+- Tabs now follow the question being asked: **Usage** (how much was used), **Limits** (how much is left) and Settings. The popover reopens on the tab you were last looking at.
+- The chart tab is gone; the usage tab switches between the heatmap, the daily chart and the monthly chart in place.
+- The limits tab groups windows by agent and shows each agent's plan (for example "Max 5x" or "Team"). The Claude plan is read from the plan fields of `~/.claude.json`, the Codex plan from `plan_type` in its session logs; unrecognized values are not shown.
+- `scripts/release.sh` now also submits the uploaded build for App Store review when an App Store Connect API key is configured.
+
 ## 1.4.1 (Build 11)
 
 - Fixed Codex sessions that Codex compressed in place under `sessions/` (`*.jsonl.zst`) being counted only from the thread database estimate and attributed to the day the thread started. They are now decoded and counted exactly, like the ones in `archived_sessions/`.

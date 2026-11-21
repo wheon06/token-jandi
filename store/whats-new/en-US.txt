@@ -1,4 +1,4 @@
-• Codex sessions that were compressed in place under the sessions folder are now counted exactly. They used to be estimated and piled onto a single day.
-• A calmer popover: just Last 7 days, Streak and Total under today's usage.
-• When the total includes estimated usage, it is marked with a +. Hover it to see why.
-• Simpler Settings, with explanations shown only on hover.
+• Tabs are now split into Usage and Limits: how much you used, and how much is left.
+• Switch between the heatmap, daily and monthly charts right on the Usage tab.
+• The Limits tab shows your Claude and Codex plans next to their limits.
+• The popover reopens on the tab you last used.
