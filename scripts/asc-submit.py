@@ -180,15 +180,44 @@ def ensure_export_compliance(client, app_id, build):
     )
 
 
+# A version in one of these states has not shipped and can still be edited.
+EDITABLE_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED", "INVALID_BINARY"}
+IN_REVIEW_STATES = {"WAITING_FOR_REVIEW", "IN_REVIEW"}
+
+
+def version_state(item):
+    return item["attributes"].get("appVersionState") or item["attributes"].get("appStoreState")
+
+
 def ensure_version(client, app_id, version):
     versions = client.get(
         f"/v1/apps/{app_id}/appStoreVersions",
         **{"filter[platform]": PLATFORM, "filter[versionString]": version},
     )["data"]
     if versions:
-        state = versions[0]["attributes"].get("appVersionState") or versions[0]["attributes"].get("appStoreState")
+        state = version_state(versions[0])
         print(f"   App Store version {version} exists ({state})")
         return versions[0]["id"], state
+
+    # App Store Connect keeps one unreleased version per platform. If an earlier
+    # one never shipped (for example it was withdrawn from review), it has to
+    # become this version; a second one can't be created next to it.
+    recent = client.get(f"/v1/apps/{app_id}/appStoreVersions", **{"filter[platform]": PLATFORM, "limit": 10})["data"]
+    for item in recent:
+        if version_state(item) in IN_REVIEW_STATES:
+            die(
+                f"{item['attributes']['versionString']} is {version_state(item)}. Wait for the review to finish, "
+                "or withdraw it in App Store Connect, then run this again"
+            )
+    unreleased = next((item for item in recent if version_state(item) in EDITABLE_STATES), None)
+    if unreleased:
+        client.write(
+            "PATCH", f"/v1/appStoreVersions/{unreleased['id']}",
+            {"data": {"type": "appStoreVersions", "id": unreleased["id"], "attributes": {"versionString": version}}},
+            f"rename unreleased version {unreleased['attributes']['versionString']} to {version}",
+        )
+        return unreleased["id"], version_state(unreleased)
+
     created = client.write(
         "POST", "/v1/appStoreVersions",
         {"data": {
